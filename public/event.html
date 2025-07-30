@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Events - Lyrical Novaa</title>
+  <style>
+    body {
+      background: #000;
+      color: #06f;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 1rem;
+    }
+    header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem;
+      background: #000;
+      box-shadow: 0 0 10px #06f;
+      height: 70px;
+      z-index: 10000;
+      color: #06f;
+      font-weight: bold;
+      font-size: 1.5rem;
+      justify-content: space-between;
+    }
+    #eventCreationSection {
+      margin-bottom: 2rem;
+      border: 1px solid #06f;
+      padding: 1rem;
+      border-radius: 10px;
+      display: none;
+    }
+    #eventsContainer {
+      margin-top: 2rem;
+    }
+    .event {
+      border: 1px solid #06f;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+    }
+    .poll-song {
+      display: flex;
+      align-items: center;
+      margin-top: 0.5rem;
+      gap: 0.5rem;
+    }
+    audio {
+      height: 30px;
+      width: 200px;
+      outline: none;
+    }
+    button {
+      cursor: pointer;
+      background: #06f;
+      border: none;
+      color: white;
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    button:disabled {
+      background: gray;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>Lyrical Novaa Events</div>
+    <div id="userRoleDisplay"></div>
+  </header>
+  <div id="hamburger-menu" class="hamburger-menu">
+    <div class="hamburger-icon" id="hamburger-icon">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <nav class="menu" id="menu">
+      <ul>
+        <li><a href="/home">Home</a></li>
+        <li><a href="/profile">Profile</a></li>
+        <li><a href="/event">Events</a></li>
+        <li><a href="/admin-dashboard">Admin Dashboard</a></li>
+        <li><a href="#" id="logout-btn">Logout</a></li>
+      </ul>
+    </nav>
+  </div>
+  <section id="eventCreationSection">
+    <h2>Create New Event</h2>
+    <form id="createEventForm">
+      <label>
+        Event Name:<br />
+        <input type="text" id="eventName" required />
+      </label><br /><br />
+      <label>
+        Upload Songs (MP3/WAV):<br />
+        <input type="file" id="audioUpload" accept=".mp3,.wav,audio/*" multiple required />
+      </label>
+      <div id="songInputs"></div>
+      <br />
+      <button type="submit">Create Event</button>
+    </form>
+  </section>
+
+  <section id="eventsContainer"></section>
+
+  <script src="static/poll.js"></script>
+</body>
+</html>

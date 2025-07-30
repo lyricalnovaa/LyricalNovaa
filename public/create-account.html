@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create Account - Lyrical Novaa</title>
+  <style>
+    body {
+      background: #000;
+      color: #0044cc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    form {
+      background: #000;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 400px;
+      box-shadow: 0 0 20px #06f;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+    label {
+      color: #0044cc;
+      font-weight: 600;
+    }
+    input, select, textarea {
+      padding: 0.7rem;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      background: #000;
+      color: #0044cc;
+    }
+    input:focus, select:focus, textarea:focus {
+      color: #06f;
+    }
+    button {
+      background: #000;
+      color: #06f;
+      padding: 1rem;
+      font-weight: 700;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #0044cc;
+      color: #cce0ff;
+    }
+    #fileName {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: #06f;
+      user-select: none;
+    }
+
+    /* Hide default ugly file input */
+    #profilePhoto {
+      display: none;
+    }
+
+    /* Custom file upload button */
+    .custom-file-upload {
+      display: inline-block;
+      padding: 0.7rem 1.5rem;
+      background-color: #000;
+      border: 2px solid #06f;
+      color: #06f;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      text-align: center;
+      width: fit-content;
+      margin-top: 0.3rem;
+    }
+    .custom-file-upload:hover {
+      background-color: #0044cc;
+      color: #cce0ff;
+    }
+
+    /* Custom alert modal styles */
+    #alert-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #003399;
+      padding: 1.8rem 2.5rem;
+      border-radius: 14px;
+      box-shadow: 0 0 15px #06f;
+      z-index: 10000;
+      width: 320px;
+      text-align: center;
+      color: #cce0ff;
+    }
+    #alert-modal p {
+      margin-bottom: 1.5rem;
+      font-size: 1.1rem;
+    }
+    #alert-ok {
+      padding: 0.7rem 2rem;
+      border-radius: 12px;
+      border: none;
+      background: #06f;
+      color: #000;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 1rem;
+      transition: background 0.3s ease;
+      user-select: none;
+    }
+    #alert-ok:hover {
+      background: #0044cc;
+      color: #cce0ff;
+    }
+
+    /* Modal backdrop */
+    #modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.7);
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+  <form id="createAccountForm" enctype="multipart/form-data" autocomplete="off">
+    <h2>Create Account</h2>
+
+    <label for="artistName">Artist Name *</label>
+    <input type="text" id="artistName" name="artistName" placeholder="Artist Name" required />
+
+    <label for="email">Email *</label>
+    <input type="email" id="email" name="email" required />
+
+    <label for="role">Role *</label>
+    <select id="role" name="role" required>
+      <option value="">Select Role</option>
+      <option value="artist">Artist</option>
+      <option value="producer">Producer</option>
+      <option value="manager">Manager</option>
+      <option value="editor">Editor</option>
+    </select>
+
+    <label for="bio">Bio</label>
+    <textarea id="bio" name="bio" rows="3" placeholder="Tell us about yourself"></textarea>
+
+    <label for="musicType">Music Type *</label>
+    <select id="musicType" name="musicType" required>
+      <option value="">Select Music</option>
+      <option value="edm">EDM</option>
+      <option value="hiphop">HipHop/Rap</option>
+      <option value="country">Country</option>
+      <option value="rock">Rock</option>
+      <option value="rnb">R&B</option>
+    </select>
+
+    <label for="password">Password *</label>
+    <input type="password" id="password" name="password" required />
+
+    <label for="confirmPassword">Confirm Password *</label>
+    <input type="password" id="confirmPassword" name="confirmPassword" required />
+
+    <!-- Custom file upload button -->
+    <label for="profilePhoto" class="custom-file-upload">Upload Profile Photo</label>
+    <input type="file" id="profilePhoto" name="profilePhoto" accept="image/*" />
+    <div id="fileName">No file chosen</div>
+
+    <button type="submit">Create Account</button>
+  </form>
+
+  <!-- Custom Alert Modal -->
+  <div id="alert-modal" role="alert" aria-live="assertive" aria-modal="true">
+    <p id="alert-message"></p>
+    <button id="alert-ok" aria-label="Close alert">OK</button>
+  </div>
+  <div id="modal-backdrop"></div>
+
+  <script src="/static/create-account.js"></script>
+</body>
+</html>

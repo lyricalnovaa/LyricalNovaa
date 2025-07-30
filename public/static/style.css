@@ -1,0 +1,12 @@
+body,html{margin:0;padding:0;background:#000;color:#06f;font-family:Arial;}
+.container{max-width:360px;margin:80px auto;background:#111;padding:20px;border-radius:8px;text-align:center;box-shadow:0 0 15px #06f;}
+.logo{width:80px;margin-bottom:10px;}
+input,button{width:100%;padding:12px;margin:8px 0;border-radius:5px;border:1px solid #06f;background:#222;color:#06f;font-size:1rem;}
+button{background:#06f;color:#fff;font-weight:bold;cursor:pointer;}
+button:hover{background:#0044cc;}
+
+.modal{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:999;}
+.modal.hidden{display:none;}
+.modal-box{background:#111;padding:20px;border-radius:8px;text-align:center;box-shadow:0 0 15px #06f;}
+.modal-box button{margin-top:15px;padding:8px 20px;background:#06f;border:none;border-radius:5px;color:#fff;cursor:pointer;}
+.modal-box button:hover{background:#0044cc;}

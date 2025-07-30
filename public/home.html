@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Home - Lyrical Novaa</title>
+  <style>
+    body {
+      background: #000;
+      color: #06f;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 1.5rem 2rem;    /* bigger padding top & bottom + sides */
+      background: #000;
+      box-shadow: 0 0 10px #06f;
+      height: 70px;           /* fixed height so it’s not tiny */
+      z-index: 10000;
+    }
+
+    #menu-btn {
+      font-size: 3rem;
+      background: transparent;
+      border: none;
+      color: #06f;
+      cursor: pointer;
+      position: fixed;
+      top: 30px;
+      left: 16px;
+      z-index: 10001;
+    }
+
+    #menu-title {
+      font-size: 3rem;
+      background: transparent;
+      border: none;
+      color: #06f;
+      cursor: pointer;
+      position: fixed;
+      top: 30px;
+      left: 750px;
+      z-index: 10001;
+    }
+    nav#menu {
+      position: fixed;
+      top: 60px;
+      left: 66px;
+      background: #000;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 0 15px #06f;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      z-index: 10000;
+    }
+    nav#menu.hidden {
+      display: none;
+    }
+    nav#menu a, nav#menu button {
+      color: #06f;
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 1rem;
+    }
+    nav#menu button:hover, nav#menu a:hover {
+      color: #cce0ff;
+    }
+    /* Logo styling */
+    #logo {
+      position: fixed;
+      top: 25px;
+      right: 0.05px;
+      height: 70px;
+      cursor: pointer;
+      z-index: 10001;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <button id="menu-btn" aria-label="Menu">☰</button>
+    <div id="menu-title">Lyrical Novaa</div>
+    <img id="logo" src="/static/logo.png" alt="Lyrical Novaa Logo" />
+  </header>
+
+  <nav id="menu" class="hidden">
+    <a href="/home">Home</a>
+    <a href="/profile">Profile</a>
+    <a href="/settings">Settings</a>
+    <button id="logout-btn">Logout</button>
+  </nav>
+
+  <script src="/static/home.js"></script>
+</body>
+</html>
