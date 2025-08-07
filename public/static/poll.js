@@ -1,145 +1,230 @@
-let pollData = [];
-let userVoted = false;
+let currentUserRole = null; // fetched from server
+let hasVotedPolls = new Set(); // local client cache
 
-const audioUpload = document.getElementById('audioUpload');
-const songInputs = document.getElementById('songInputs');
-const pollForm = document.getElementById('pollForm');
-const voteForm = document.getElementById('voteForm');
-const pollSection = document.getElementById('pollSection');
-const pollResults = document.getElementById('pollResults');
+async function fetchUserProfile() {
+  const res = await fetch('/api/profile');
+  if (!res.ok) return alert('Failed to fetch user profile');
+  const data = await res.json();
+  currentUserRole = data.role;
+  document.getElementById('userRoleDisplay')?.textContent = `Role: ${currentUserRole}`;
+  setupUIByRole();
+  loadEvents();
+}
 
-// Add new files to pollData and render inputs
-audioUpload.addEventListener('change', (event) => {
-  const newFiles = Array.from(event.target.files);
+function setupUIByRole() {
+  const createEventBtn = document.getElementById('create-event-btn');
+  const eventSection = document.getElementById('eventCreationSection');
+  if (currentUserRole === 'admin') {
+    createEventBtn.style.display = 'inline-block';
+    eventSection.style.display = 'none';
+    createEventBtn.onclick = () => {
+      eventSection.style.display = eventSection.style.display === 'block' ? 'none' : 'block';
+    };
+  } else {
+    createEventBtn.style.display = 'none';
+    eventSection.style.display = 'none';
+  }
+}
 
-  newFiles.forEach((file) => {
-    pollData.push({
-      id: `song-${pollData.length}`,
-      file: file,
-      nameInput: null,
-      votes: 0
-    });
-  });
+const songFiles = [];
+const songNamesInputs = [];
 
-  renderSongInputs();
-  event.target.value = ''; // reset input so same files can be re-uploaded
-});
+document.getElementById('audioUpload').addEventListener('change', (e) => {
+  const files = e.target.files;
+  const container = document.getElementById('songInputs');
+  container.innerHTML = '';
+  songFiles.length = 0;
+  songNamesInputs.length = 0;
 
-function renderSongInputs() {
-  songInputs.innerHTML = '';
-
-  pollData.forEach((data, index) => {
-    const container = document.createElement('div');
-    container.className = 'song-entry';
+  Array.from(files).forEach((file, i) => {
+    songFiles.push(file);
+    const div = document.createElement('div');
+    div.classList.add('poll-song');
 
     const label = document.createElement('label');
-    label.textContent = 'Name this song:';
+    label.textContent = `Song name: `;
 
-    let nameInput = data.nameInput;
-    if (!nameInput) {
-      nameInput = document.createElement('input');
-      nameInput.type = 'text';
-      nameInput.placeholder = 'Song name';
-      nameInput.required = true;
-      nameInput.value = data.name || '';
-      data.nameInput = nameInput;
-    }
-
-    // Update stored name on input change
-    nameInput.oninput = () => {
-      data.name = nameInput.value;
-    };
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.required = true;
+    input.placeholder = 'Custom song name';
+    songNamesInputs.push(input);
 
     const audio = document.createElement('audio');
     audio.controls = true;
-    audio.src = URL.createObjectURL(data.file);
+    audio.src = URL.createObjectURL(file);
 
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.textContent = 'Remove';
-    removeBtn.style.marginLeft = '10px';
-    removeBtn.onclick = () => {
-      pollData.splice(index, 1);
-      renderSongInputs();
-    };
-
-    container.appendChild(label);
-    container.appendChild(nameInput);
-    container.appendChild(audio);
-    container.appendChild(removeBtn);
-
-    songInputs.appendChild(container);
+    div.appendChild(label);
+    div.appendChild(input);
+    div.appendChild(audio);
+    container.appendChild(div);
   });
-}
+});
 
-pollForm.addEventListener('submit', (e) => {
+document.getElementById('createEventForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  for (const input of songNamesInputs) {
+    if (!input.value.trim()) return alert('All songs must have names!');
+  }
 
-  if (pollData.length === 0) {
-    alert('Upload at least one song!');
+  const formData = new FormData();
+  formData.append('eventName', document.getElementById('eventName').value);
+  const songNames = songNamesInputs.map(input => input.value.trim());
+  formData.append('songNames', JSON.stringify(songNames));
+  songFiles.forEach(file => formData.append('songs', file));
+
+  try {
+    const res = await fetch('/api/create-event', {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      alert('Error: ' + error.error);
+      return;
+    }
+    alert('Event created successfully!');
+    e.target.reset();
+    document.getElementById('songInputs').innerHTML = '';
+    songFiles.length = 0;
+    songNamesInputs.length = 0;
+    document.getElementById('eventCreationSection').style.display = 'none';
+    loadEvents();
+  } catch {
+    alert('Failed to create event');
+  }
+});
+
+async function loadEvents() {
+  const container = document.getElementById('eventsContainer');
+  container.innerHTML = '<p>Loading events...</p>';
+
+  const res = await fetch('/api/events');
+  if (!res.ok) {
+    container.innerHTML = '<p>Failed to load events</p>';
     return;
   }
 
-  // Validate all names filled
-  for (const data of pollData) {
-    if (!data.nameInput.value.trim()) {
-      alert('All songs must have a name!');
-      return;
-    }
+  const events = await res.json();
+  container.innerHTML = '';
+
+  if (events.length === 0) {
+    container.innerHTML = '<p>No events found.</p>';
+    return;
   }
 
-  voteForm.innerHTML = '';
+  events.forEach(event => {
+    const eventDiv = document.createElement('div');
+    eventDiv.classList.add('event');
 
-  pollData.forEach((data, index) => {
-    const radio = document.createElement('input');
-    radio.type = 'radio';
-    radio.name = 'vote';
-    radio.value = index;
-    radio.id = `vote-${index}`;
+    const title = document.createElement('h3');
+    title.textContent = event.name;
+    eventDiv.appendChild(title);
 
-    const label = document.createElement('label');
-    label.setAttribute('for', `vote-${index}`);
-    label.innerText = data.nameInput.value;
+    if (currentUserRole === 'admin') {
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete Event';
+      delBtn.onclick = () => deleteEvent(event.id);
+      eventDiv.appendChild(delBtn);
+    }
 
-    voteForm.appendChild(radio);
-    voteForm.appendChild(label);
-    voteForm.appendChild(document.createElement('br'));
+    const pollContainer = document.createElement('div');
+    pollContainer.classList.add('poll-group');
+    const userVoted = event.polls.some(p => hasVotedPolls.has(p.id));
+
+    event.polls.forEach(poll => {
+      const pollDiv = document.createElement('div');
+      pollDiv.classList.add('poll-song');
+
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.src = poll.filePath;
+      pollDiv.appendChild(audio);
+
+      const label = document.createElement('label');
+      label.textContent = poll.songName;
+      pollDiv.appendChild(label);
+
+      if (currentUserRole !== 'admin') {
+        const voteBtn = document.createElement('button');
+        voteBtn.textContent = hasVotedPolls.has(poll.id) ? 'Voted' : 'Vote';
+        voteBtn.disabled = userVoted;
+        voteBtn.onclick = () => votePoll(poll.id, event.id);
+        pollDiv.appendChild(voteBtn);
+      }
+
+      const resultDiv = document.createElement('div');
+      resultDiv.classList.add('poll-result');
+      resultDiv.id = `result-${poll.id}`;
+      pollDiv.appendChild(resultDiv);
+
+      if (userVoted) {
+        fetchPollResults(event.id);
+      }
+
+      pollContainer.appendChild(pollDiv);
+    });
+
+    eventDiv.appendChild(pollContainer);
+    container.appendChild(eventDiv);
   });
-
-  pollForm.style.display = 'none';
-  pollSection.style.display = 'block';
-});
-
-function submitVote() {
-  const selected = document.querySelector('input[name="vote"]:checked');
-  if (!selected) return alert('Pick a song to vote on!');
-  if (userVoted) return alert('You already voted!');
-
-  const index = parseInt(selected.value);
-  pollData[index].votes = (pollData[index].votes || 0) + 1;
-  userVoted = true;
-
-  renderPollResults();
 }
 
-function renderPollResults() {
-  pollResults.innerHTML = '<h3>Live Poll Results</h3>';
-  pollData.forEach((data) => {
-    const result = document.createElement('div');
-    result.innerText = `${data.nameInput.value}: ${data.votes || 0} votes`;
-    pollResults.appendChild(result);
-  });
-  pollResults.style.display = 'block';
+async function votePoll(pollId, eventId) {
+  if (currentUserRole === 'admin') return alert("Admins can't vote lol");
+
+  try {
+    const res = await fetch('/api/vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pollId }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Error voting: ' + err.error);
+      return;
+    }
+
+    hasVotedPolls.add(pollId);
+    alert('Vote counted!');
+    await fetchPollResults(eventId);
+    loadEvents();
+  } catch {
+    alert('Failed to send vote');
+  }
 }
 
-// Reset poll & vote
-function resetPoll() {
-  if (!confirm('Are you sure you want to reset the poll? All data will be lost.')) return;
-  pollData = [];
-  userVoted = false;
-  songInputs.innerHTML = '';
-  voteForm.innerHTML = '';
-  pollResults.innerHTML = '';
-  pollForm.style.display = 'block';
-  pollSection.style.display = 'none';
+async function fetchPollResults(eventId) {
+  try {
+    const res = await fetch(`/api/poll-results/${eventId}`);
+    if (!res.ok) return;
+
+    const results = await res.json();
+    results.forEach(p => {
+      const resultBox = document.getElementById(`result-${p.id}`);
+      if (resultBox) {
+        resultBox.textContent = `${p.songName} — ${p.votes} votes (${p.percentage.toFixed(1)}%)`;
+      }
+    });
+  } catch {
+    console.error('Error fetching poll results');
+  }
 }
+
+async function deleteEvent(eventId) {
+  if (!confirm('Delete this event and all its polls?')) return;
+  try {
+    const res = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Failed to delete event: ' + err.error);
+      return;
+    }
+    alert('Event deleted');
+    loadEvents();
+  } catch {
+    alert('Error deleting event');
+  }
+}
+
+fetchUserProfile();
