@@ -8,7 +8,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const alertOk = document.getElementById('alert-ok');
   const menuBtn = document.getElementById('menu-btn');
   const menu = document.getElementById('menu');
-  const editProfileBtn = document.getElementById('edit-profile-btn'); // new line
+  const editProfileBtn = document.getElementById('edit-profile-btn');
+  const editProfileModal = document.getElementById('edit-profile-modal');
+  const cancelEditBtn = document.getElementById('cancel-edit-profile');
+  const editProfileForm = document.getElementById('edit-profile-form');
 
   // Mobile menu toggle
   menuBtn?.addEventListener('click', () => {
@@ -50,6 +53,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       profilePic.src = data.profilePicUrl;
     }
 
+    // Optionally, prefill modal inputs if data contains bio/tags/profilePicUrl
+    if (data.bio) {
+      document.getElementById('edit-bio').value = data.bio;
+    }
+    if (data.tags) {
+      document.getElementById('edit-tags').value = data.tags.join(', ');
+    }
+    if (data.profilePicUrl) {
+      document.getElementById('edit-profile-pic-url').value = data.profilePicUrl;
+    }
+
     renderPosts(data.posts);
   } catch (err) {
     showAlert('Error loading profile.');
@@ -59,17 +73,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     postsContainer.innerHTML = '';
 
     if (!posts || posts.length === 0) {
-      postsContainer.innerHTML = `<p class="text-gray-500">No posts yet.</p>`;
+      postsContainer.innerHTML = `<p>No posts yet.</p>`;
       return;
     }
 
     posts.forEach(post => {
       const postDiv = document.createElement('div');
-      postDiv.className = 'post border p-3 rounded bg-white shadow-sm mb-4';
+      postDiv.className = 'post';
 
       postDiv.innerHTML = `
-        <p class="text-sm text-gray-800 mb-2">${post.content}</p>
-        <button class="edit-post-btn text-blue-500 hover:underline" data-id="${post.id}">Edit Post</button>
+        <p>${post.content}</p>
+        <button class="edit-post-btn" data-id="${post.id}">Edit Post</button>
       `;
 
       postsContainer.appendChild(postDiv);
@@ -84,9 +98,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // New: Edit Profile button handler
+  // Edit Profile modal open/close
   editProfileBtn?.addEventListener('click', () => {
-    window.location.href = '/edit-profile';
+    editProfileModal.classList.remove('hidden');
+  });
+
+  cancelEditBtn?.addEventListener('click', () => {
+    editProfileModal.classList.add('hidden');
+  });
+
+  // Handle form submit - you’ll wanna replace this with real API call
+  editProfileForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const updatedPic = document.getElementById('edit-profile-pic-url').value.trim();
+    const updatedBio = document.getElementById('edit-bio').value.trim();
+    const updatedTags = document.getElementById('edit-tags').value.trim()
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag)
+      .slice(0, 5);
+
+    // Basic validation could go here if you want
+
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT', // or POST depending on your backend
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          profilePicUrl: updatedPic,
+          bio: updatedBio,
+          tags: updatedTags,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to save profile');
+      }
+
+      // Update profile UI after save
+      profilePic.src = updatedPic || '/static/default-pfp.png';
+      // Optionally update bio or tags in UI if you display them
+      editProfileModal.classList.add('hidden');
+      showAlert('Profile updated successfully.');
+    } catch (err) {
+      showAlert(err.message || 'Error updating profile.');
+    }
   });
 });
 
