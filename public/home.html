@@ -90,7 +90,87 @@
       color: #cce0ff;
     }
 
-    /* MOBILE FIXES */
+    #create-post-btn {
+      margin: 100px auto 20px;
+      display: block;
+      background-color: #06f;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #06f;
+    }
+
+    /* Modal styles */
+    #post-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 100vw;
+      background-color: rgba(0, 0, 0, 0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100000;
+    }
+
+    #post-modal-content {
+      background: #111;
+      color: #06f;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 0 20px #06f;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    #post-modal-content h2 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    #post-text {
+      width: 100%;
+      height: 120px;
+      padding: 10px;
+      background: #000;
+      color: #fff;
+      border: 1px solid #06f;
+      border-radius: 8px;
+      resize: vertical;
+    }
+
+    .post-modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .post-modal-buttons button {
+      padding: 8px 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #submit-post {
+      background-color: #06f;
+      color: #fff;
+    }
+
+    #cancel-post {
+      background-color: #333;
+      color: #ccc;
+    }
+
     @media (max-width: 768px) {
       #menu-title {
         font-size: 1.5rem;
@@ -130,7 +210,22 @@
     <a href="/settings">Settings</a>
     <button id="logout-btn">Logout</button>
   </nav>
-  <script src="/static/home.js"></script>
 
+  <!-- Create Post Button -->
+  <button id="create-post-btn">Create Post</button>
+
+  <!-- Post Modal -->
+  <div id="post-modal">
+    <div id="post-modal-content">
+      <h2>Create Post as <span id="logged-in-user">@username</span></h2>
+      <textarea id="post-text" placeholder="What's on your mind?"></textarea>
+      <div class="post-modal-buttons">
+        <button id="cancel-post">Cancel</button>
+        <button id="submit-post">Post</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/home.js"></script>
 </body>
 </html>
