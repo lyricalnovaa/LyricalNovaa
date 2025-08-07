@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const alertOk = document.getElementById('alert-ok');
   const menuBtn = document.getElementById('menu-btn');
   const menu = document.getElementById('menu');
+  const editProfileBtn = document.getElementById('edit-profile-btn'); // new line
 
   // Mobile menu toggle
   menuBtn?.addEventListener('click', () => {
@@ -82,6 +83,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
   }
+
+  // New: Edit Profile button handler
+  editProfileBtn?.addEventListener('click', () => {
+    window.location.href = '/edit-profile';
+  });
 });
 
 function editPost(postID) {
