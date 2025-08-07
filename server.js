@@ -259,15 +259,19 @@ app.get('/api/current-user', (req, res) => {
   res.json({ artistID: req.session.artistID, role: req.session.userRole });
 });
 
-// NEW - Return current logged-in user info (for frontend create post)
-app.get('/api/user', (req, res) => {
+// NEW - Post creation endpoint
+app.post('/api/post', (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-  // Fetch artistName or username from DB
-  db.get('SELECT artistName FROM users WHERE artistID = ?', [req.session.artistID], (err, row) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    if (!row) return res.status(404).json({ error: 'User not found' });
-    res.json({ username: row.artistName });
-  });
+
+  const { content } = req.body;
+  if (!content || content.trim() === '') {
+    return res.status(400).json({ error: 'Post content cannot be empty' });
+  }
+
+  // For now just console log the post, later you can add DB logic
+  console.log(`User ${req.session.artistID} posted: ${content}`);
+
+  res.json({ message: 'Post created!' });
 });
 
 // Auth redirect middleware (leave this last)
