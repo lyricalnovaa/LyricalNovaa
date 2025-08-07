@@ -253,6 +253,12 @@ app.post('/api/vote', (req, res, next) => {
   });
 });
 
+// NEW - Return current logged-in user info (artistID and role)
+app.get('/api/current-user', (req, res) => {
+  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+  res.json({ artistID: req.session.artistID, role: req.session.userRole });
+});
+
 // Auth redirect middleware (leave this last)
 app.use((req, res, next) => {
   if (!req.session.artistID && !req.path.startsWith('/login') && !req.path.startsWith('/api')) {
