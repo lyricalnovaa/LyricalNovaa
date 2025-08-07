@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // =========================
-  // 🚀 Create Post Modal Logic
+  //  Create Post Modal Logic
   // =========================
 
   const createPostBtn = document.getElementById("create-post-btn");
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loggedInUserEl = document.getElementById("logged-in-user");
 
   // Fetch logged-in user
-  fetch("/api/user")
+  fetch("/api/current-user")
     .then(res => res.json())
     .then(data => {
       if (data && data.username) {
