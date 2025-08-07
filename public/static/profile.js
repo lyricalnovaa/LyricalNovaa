@@ -9,21 +9,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   const menuBtn = document.getElementById('menu-btn');
   const menu = document.getElementById('menu');
 
-  // toggle menu
-  menuBtn.onclick = () => {
-    menu.classList.toggle('hidden');
-  };
+  // Mobile menu toggle
+  menuBtn?.addEventListener('click', () => {
+    menu?.classList.toggle('hidden');
+  });
 
-  logoutBtn.onclick = async () => {
-    const res = await fetch('/api/logout', { method: 'POST' });
-    if (res.ok) {
-      showAlert('Logged out.', () => {
-        window.location.href = '/login';
-      });
-    } else {
-      showAlert('Logout failed.');
+  // Logout button handler
+  logoutBtn?.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/logout', { method: 'POST' });
+      if (res.ok) {
+        showAlert('Logged out.', () => window.location.href = '/login');
+      } else {
+        showAlert('Logout failed.');
+      }
+    } catch (err) {
+      showAlert('Network error.');
     }
-  };
+  });
 
   function showAlert(msg, cb) {
     alertText.textContent = msg;
@@ -34,35 +37,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
-  // Get user data
-  const res = await fetch('/api/profile');
-  if (!res.ok) return showAlert('Failed to load profile.');
+  // Fetch and display profile info
+  try {
+    const res = await fetch('/api/profile');
+    if (!res.ok) return showAlert('Failed to load profile.');
 
-  const data = await res.json();
+    const data = await res.json();
 
-  profileName.textContent = `@${data.artistName}`;
-  if (data.profilePicUrl) {
-    profilePic.src = data.profilePicUrl;
+    profileName.textContent = `@${data.artistName}`;
+    if (data.profilePicUrl) {
+      profilePic.src = data.profilePicUrl;
+    }
+
+    renderPosts(data.posts);
+  } catch (err) {
+    showAlert('Error loading profile.');
   }
 
-  // Load posts
-  postsContainer.innerHTML = '';
-  if (data.posts.length === 0) {
-    postsContainer.innerHTML = `<p>No posts yet.</p>`;
-  } else {
-    data.posts.forEach(post => {
-      const div = document.createElement('div');
-      div.className = 'post';
-      div.innerHTML = `
-        <p>${post.content}</p>
-        <button onclick="editPost('${post.id}')">Edit Post</button>
+  function renderPosts(posts) {
+    postsContainer.innerHTML = '';
+
+    if (!posts || posts.length === 0) {
+      postsContainer.innerHTML = `<p class="text-gray-500">No posts yet.</p>`;
+      return;
+    }
+
+    posts.forEach(post => {
+      const postDiv = document.createElement('div');
+      postDiv.className = 'post border p-3 rounded bg-white shadow-sm mb-4';
+
+      postDiv.innerHTML = `
+        <p class="text-sm text-gray-800 mb-2">${post.content}</p>
+        <button class="edit-post-btn text-blue-500 hover:underline" data-id="${post.id}">Edit Post</button>
       `;
-      postsContainer.appendChild(div);
+
+      postsContainer.appendChild(postDiv);
+    });
+
+    // Add edit button event listeners
+    document.querySelectorAll('.edit-post-btn').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const postId = e.target.getAttribute('data-id');
+        editPost(postId);
+      });
     });
   }
 });
 
 function editPost(postID) {
-  // you can build this later
   alert('Editing post: ' + postID);
 }
