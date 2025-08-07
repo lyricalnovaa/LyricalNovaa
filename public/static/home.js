@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
     postTextArea.value = "";
   };
 
-  // Submit post
+  // Submit post modal
   submitPostBtn.onclick = async () => {
     const content = postTextArea.value.trim();
     if (!content) {
@@ -99,4 +99,62 @@ document.addEventListener("DOMContentLoaded", () => {
       showAlert("Server error on post.");
     }
   };
+
+  // =========================
+  // 🚀 ADDITION: Inline Post Box Logic (Facebook-style)
+  // =========================
+
+  const postInput = document.getElementById("post-input");
+  const submitPostBtnInline = document.getElementById("submit-post-inline");
+  const loggedInUserInline = document.getElementById("logged-in-user-inline");
+
+  // Fetch logged-in user for inline post box username display
+  fetch("/api/user")
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.username) {
+        if (loggedInUserInline) loggedInUserInline.textContent = "@" + data.username;
+      }
+    })
+    .catch(() => {
+      if (loggedInUserInline) loggedInUserInline.textContent = "@unknown";
+    });
+
+  // Disable submit button initially
+  if (submitPostBtnInline) submitPostBtnInline.disabled = true;
+
+  // Enable/disable inline submit button based on textarea content
+  if (postInput && submitPostBtnInline) {
+    postInput.addEventListener("input", () => {
+      submitPostBtnInline.disabled = postInput.value.trim() === "";
+    });
+
+    // Submit post from inline box
+    submitPostBtnInline.addEventListener("click", async () => {
+      const content = postInput.value.trim();
+      if (!content) {
+        alert("Post content cannot be empty."); // fallback alert
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+
+        if (res.ok) {
+          alert("Post created!");
+          postInput.value = "";
+          submitPostBtnInline.disabled = true;
+          // TODO: refresh posts feed here if you build it
+        } else {
+          alert("Failed to post.");
+        }
+      } catch (err) {
+        alert("Server error on post.");
+      }
+    });
+  }
 });
