@@ -36,4 +36,67 @@ document.addEventListener("DOMContentLoaded", () => {
       showAlert("Server error on logout.");
     }
   };
+
+  // =========================
+  // 🚀 Create Post Modal Logic
+  // =========================
+
+  const createPostBtn = document.getElementById("create-post-btn");
+  const postModal = document.getElementById("post-modal");
+  const cancelPostBtn = document.getElementById("cancel-post");
+  const submitPostBtn = document.getElementById("submit-post");
+  const postTextArea = document.getElementById("post-text");
+  const loggedInUserEl = document.getElementById("logged-in-user");
+
+  // Fetch logged-in user
+  fetch("/api/user")
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.username) {
+        loggedInUserEl.textContent = "@" + data.username;
+      }
+    })
+    .catch(() => {
+      loggedInUserEl.textContent = "@unknown";
+    });
+
+  // Open modal
+  createPostBtn.onclick = () => {
+    postModal.style.display = "flex";
+    postTextArea.focus();
+  };
+
+  // Close modal
+  cancelPostBtn.onclick = () => {
+    postModal.style.display = "none";
+    postTextArea.value = "";
+  };
+
+  // Submit post
+  submitPostBtn.onclick = async () => {
+    const content = postTextArea.value.trim();
+    if (!content) {
+      showAlert("Post content cannot be empty.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+      });
+
+      if (res.ok) {
+        showAlert("Post created!", () => {
+          postModal.style.display = "none";
+          postTextArea.value = "";
+        });
+      } else {
+        showAlert("Failed to post.");
+      }
+    } catch {
+      showAlert("Server error on post.");
+    }
+  };
 });
