@@ -259,6 +259,17 @@ app.get('/api/current-user', (req, res) => {
   res.json({ artistID: req.session.artistID, role: req.session.userRole });
 });
 
+// NEW - Return current logged-in user info (for frontend create post)
+app.get('/api/user', (req, res) => {
+  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+  // Fetch artistName or username from DB
+  db.get('SELECT artistName FROM users WHERE artistID = ?', [req.session.artistID], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (!row) return res.status(404).json({ error: 'User not found' });
+    res.json({ username: row.artistName });
+  });
+});
+
 // Auth redirect middleware (leave this last)
 app.use((req, res, next) => {
   if (!req.session.artistID && !req.path.startsWith('/login') && !req.path.startsWith('/api')) {
