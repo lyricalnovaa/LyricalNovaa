@@ -12,44 +12,55 @@
       margin: 0;
       padding: 0;
     }
+
     header {
       position: relative;
       display: flex;
       align-items: center;
-      padding: 1.5rem 2rem;    /* bigger padding top & bottom + sides */
+      padding: 1.5rem 2rem;
       background: #000;
       box-shadow: 0 0 10px #06f;
-      height: 70px;           /* fixed height so it’s not tiny */
+      height: 70px;
       z-index: 10000;
+      justify-content: space-between;
     }
 
     #menu-btn {
-      font-size: 3rem;
+      font-size: 2.5rem;
       background: transparent;
       border: none;
       color: #06f;
       cursor: pointer;
       position: fixed;
-      top: 30px;
+      top: 20px;
       left: 16px;
       z-index: 10001;
     }
 
     #menu-title {
-      font-size: 3rem;
-      background: transparent;
-      border: none;
+      font-size: 2rem;
       color: #06f;
-      cursor: pointer;
+      font-weight: bold;
       position: fixed;
-      top: 30px;
-      left: 750px;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 24px;
       z-index: 10001;
     }
+
+    #logo {
+      position: fixed;
+      top: 20px;
+      right: 16px;
+      height: 45px;
+      cursor: pointer;
+      z-index: 10001;
+    }
+
     nav#menu {
       position: fixed;
-      top: 60px;
-      left: 66px;
+      top: 70px;
+      left: 16px;
       background: #000;
       padding: 1rem;
       border-radius: 12px;
@@ -59,9 +70,11 @@
       gap: 1rem;
       z-index: 10000;
     }
+
     nav#menu.hidden {
       display: none;
     }
+
     nav#menu a, nav#menu button {
       color: #06f;
       text-decoration: none;
@@ -72,17 +85,34 @@
       padding: 0;
       font-size: 1rem;
     }
+
     nav#menu button:hover, nav#menu a:hover {
       color: #cce0ff;
     }
-    /* Logo styling */
-    #logo {
-      position: fixed;
-      top: 25px;
-      right: 0.05px;
-      height: 70px;
-      cursor: pointer;
-      z-index: 10001;
+
+    /* MOBILE FIXES */
+    @media (max-width: 768px) {
+      #menu-title {
+        font-size: 1.5rem;
+        top: 26px;
+      }
+
+      #logo {
+        height: 40px;
+        top: 22px;
+      }
+
+      #menu-btn {
+        font-size: 2rem;
+        top: 22px;
+      }
+
+      nav#menu {
+        top: 70px;
+        left: 10px;
+        width: calc(100% - 20px);
+        box-sizing: border-box;
+      }
     }
   </style>
 </head>
@@ -100,7 +130,7 @@
     <a href="/settings">Settings</a>
     <button id="logout-btn">Logout</button>
   </nav>
-
   <script src="/static/home.js"></script>
+
 </body>
 </html>
