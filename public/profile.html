@@ -2,195 +2,170 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Profile - Lyrical Novaa</title>
-  <link rel="stylesheet" href="/static/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lyrical Novaa Profile</title>
+  <link rel="stylesheet" href="/styles.css" />
   <style>
-    body {
-      background-color: #000;
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
+    * {
+      box-sizing: border-box;
       margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
     }
 
     header {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .profile-section {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 1rem;
-      background: #000;
-      box-shadow: 0 0 10px #06f;
-    }
-
-    .logo {
-      height: 50px;
-    }
-
-    #menu-btn {
-      font-size: 2rem;
-      color: #06f;
-      background: transparent;
-      border: none;
-    }
-
-    nav#menu {
-      position: absolute;
-      top: 70px;
-      left: 1rem;
-      background: #000;
-      border: 1px solid #06f;
-      padding: 1rem;
-      border-radius: 10px;
-      display: none;
-      flex-direction: column;
-    }
-
-    nav#menu a, nav#menu button {
-      color: #06f;
-      text-decoration: none;
-      background: none;
-      border: none;
-      font-weight: bold;
-      margin: 0.5rem 0;
-      cursor: pointer;
-    }
-
-    main {
-      max-width: 800px;
-      margin: auto;
-      padding: 2rem 1rem;
-    }
-
-    .profile-header {
-      text-align: center;
-    }
-
-    .profile-header img {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      border: 3px solid #06f;
-      object-fit: cover;
-    }
-
-    .profile-header h1 {
-      margin: 1rem 0 0.5rem;
-      color: #06f;
-    }
-
-    .tags {
-      display: flex;
+      gap: 1rem;
       flex-wrap: wrap;
-      justify-content: center;
+    }
+
+    #profile-pic {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #2c60d3;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
       gap: 0.5rem;
-      margin-top: 0.5rem;
     }
 
-    .tag {
-      background: #111;
-      border: 1px solid #06f;
-      padding: 0.3rem 0.7rem;
-      border-radius: 20px;
-      font-size: 0.9rem;
-    }
-
-    .bio {
-      margin-top: 1rem;
-      font-style: italic;
-      color: #ccc;
-    }
-
-    .edit-btn {
-      background: #06f;
-      border: none;
+    button {
       padding: 0.5rem 1rem;
+      background-color: #2c60d3;
       color: white;
-      font-weight: bold;
-      border-radius: 6px;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
-      margin-top: 1rem;
+    }
+
+    button:hover {
+      background-color: #1e4db2;
+    }
+
+    .posts-container {
+      width: 100%;
+      max-width: 1200px;
+      margin-top: 2rem;
     }
 
     .post {
-      background: #111;
-      border: 2px solid #0044cc;
-      border-radius: 10px;
+      border: 1px solid #ccc;
       padding: 1rem;
-      margin: 1.5rem 0;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      background: #f8f8f8;
     }
 
-    .post button {
-      background: #06f;
-      color: white;
-      border: none;
-      padding: 0.3rem 0.8rem;
-      margin-top: 0.5rem;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    #edit-widget {
+    #menu {
       display: none;
-      background: #111;
-      padding: 1rem;
-      border: 2px solid #06f;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    #menu.hidden {
+      display: none;
+    }
+
+    #alert-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    #alert-modal.hidden {
+      display: none;
+    }
+
+    #alert-box {
+      background: white;
+      padding: 2rem;
       border-radius: 10px;
-      margin-top: 1.5rem;
+      max-width: 300px;
+      text-align: center;
     }
 
-    #edit-widget input, #edit-widget textarea {
-      width: 100%;
-      background: #000;
-      border: 1px solid #06f;
-      color: white;
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-      border-radius: 6px;
-    }
+    @media screen and (max-width: 768px) {
+      header, .posts-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
 
-    #edit-widget button {
-      background: #06f;
-      border: none;
-      color: white;
-      padding: 0.5rem 1rem;
-      font-weight: bold;
-      border-radius: 5px;
-      cursor: pointer;
+      .profile-section {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      #profile-pic {
+        width: 60px;
+        height: 60px;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <img src="/static/logo.png" class="logo" alt="Logo">
-    <button id="menu-btn">☰</button>
-    <nav id="menu">
-      <a href="/home">Home</a>
-      <a href="/settings">Settings</a>
+    <div class="profile-section">
+      <img id="profile-pic" src="/default.jpg" alt="Profile Picture">
+      <h2 id="profile-name">@Username</h2>
+    </div>
+
+    <div class="buttons">
+      <button id="edit-profile-btn">Edit Profile</button>
       <button id="logout-btn">Logout</button>
-    </nav>
+      <button id="menu-btn">☰ Menu</button>
+    </div>
   </header>
 
-  <main>
-    <section class="profile-header">
-      <img id="profile-pic" src="/static/default-pfp.png" alt="Profile Picture">
-      <h1 id="profile-name">@loading...</h1>
-      <div class="tags" id="profile-tags"></div>
-      <div class="bio" id="profile-bio">Loading bio...</div>
-      <button class="edit-btn" id="edit-profile-btn" style="display:none;">Edit Profile</button>
+  <div id="menu" class="hidden">
+    <button onclick="location.href='/home'">Home</button>
+    <button onclick="location.href='/events'">Events</button>
+    <button onclick="location.href='/settings'">Settings</button>
+  </div>
 
-      <div id="edit-widget">
-        <label>Upload New PFP: <input type="file" id="new-pfp"></label>
-        <label>Update Bio: <textarea id="new-bio" rows="3"></textarea></label>
-        <label>Add Tags (comma separated, max 5): <input type="text" id="new-tags"></label>
-        <button id="save-profile">Save</button>
-      </div>
-    </section>
-
-    <section id="posts">
-      <p>Loading posts...</p>
-    </section>
+  <main class="posts-container">
+    <h3>Your Posts</h3>
+    <div id="posts"></div>
   </main>
 
-  <script src="/static/profile.js"></script>
+  <div id="alert-modal" class="hidden">
+    <div id="alert-box">
+      <p id="alert-text"></p>
+      <button id="alert-ok">OK</button>
+    </div>
+  </div>
 </body>
 </html>
