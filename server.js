@@ -41,11 +41,40 @@ const createPollTable = `CREATE TABLE IF NOT EXISTS polls (
   songPath TEXT NOT NULL,
   votes INTEGER DEFAULT 0
 )`;
+const createPostsTable = `CREATE TABLE IF NOT EXISTS posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  artistID TEXT NOT NULL,
+  content TEXT,
+  mediaPath TEXT,
+  mediaType TEXT,
+  createdAt TEXT DEFAULT (datetime('now'))
+)`;
+
+const createCommentsTable = `CREATE TABLE IF NOT EXISTS comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  postID INTEGER NOT NULL,
+  artistID TEXT NOT NULL,
+  comment TEXT NOT NULL,
+  createdAt TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY(postID) REFERENCES posts(id)
+)`;
+
+const createLikesTable = `CREATE TABLE IF NOT EXISTS likes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  postID INTEGER NOT NULL,
+  artistID TEXT NOT NULL,
+  createdAt TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY(postID) REFERENCES posts(id)
+)`;
 
 db.serialize(() => {
   db.run(createUserTable);
   db.run(createPollTable);
+  db.run(createPostsTable);
+  db.run(createCommentsTable);
+  db.run(createLikesTable);
 });
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -211,6 +240,102 @@ app.post('/api/polls', (req, res, next) => {
   if (!eventName || !files || !names || files.length !== names.length) {
     return res.status(400).json({ error: 'Missing or mismatched poll data' });
   }
+  const postUpload = multer({
+  dest: path.join(__dirname, 'uploads/posts/'),
+  limits: { fileSize: 50 * 1024 * 1024 }, // max 50MB for media
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image/video files allowed'));
+    }
+  },
+});
+
+// Create a post with optional media
+app.post('/api/post', postUpload.single('media'), (req, res) => {
+  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+
+  const content = req.body.content || '';
+  let mediaPath = null;
+  let mediaType = null;
+
+  if (req.file) {
+    mediaPath = `/uploads/posts/${req.file.filename}`;
+    mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
+  }
+
+  db.run(
+    `INSERT INTO posts (artistID, content, mediaPath, mediaType, createdAt) VALUES (?, ?, ?, ?, datetime('now'))`,
+    [req.session.artistID, content, mediaPath, mediaType],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to create post' });
+      res.json({ message: 'Post created', postId: this.lastID });
+    }
+  );
+});
+
+// Get posts feed with likes and comments count and user info
+app.get('/api/posts', (req, res) => {
+  db.all(
+    `SELECT posts.*, users.artistName, users.profilePhotoPath,
+      (SELECT COUNT(*) FROM likes WHERE postID = posts.id) AS likeCount,
+      (SELECT COUNT(*) FROM comments WHERE postID = posts.id) AS commentCount
+    FROM posts
+    JOIN users ON posts.artistID = users.artistID
+    ORDER BY posts.createdAt DESC
+    LIMIT 50`,
+    [],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Failed to fetch posts' });
+      res.json(rows);
+    }
+  );
+});
+
+// Like/unlike toggle endpoint
+app.post('/api/like', (req, res) => {
+  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { postId } = req.body;
+  if (!postId) return res.status(400).json({ error: 'Missing postId' });
+
+  db.get(`SELECT id FROM likes WHERE postID = ? AND artistID = ?`, [postId, req.session.artistID], (err, row) => {
+    if (err) return res.status(500).json({ error: 'DB error' });
+
+    if (row) {
+      // Unlike
+      db.run(`DELETE FROM likes WHERE id = ?`, [row.id], (err) => {
+        if (err) return res.status(500).json({ error: 'Failed to unlike' });
+        res.json({ message: 'Unliked' });
+      });
+    } else {
+      // Like
+      db.run(`INSERT INTO likes (postID, artistID, createdAt) VALUES (?, ?, datetime('now'))`, [postId, req.session.artistID], (err) => {
+        if (err) return res.status(500).json({ error: 'Failed to like' });
+        res.json({ message: 'Liked' });
+      });
+    }
+  });
+});
+
+// Add comment to a post
+app.post('/api/comment', (req, res) => {
+  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { postId, comment } = req.body;
+  if (!postId || !comment) return res.status(400).json({ error: 'Missing postId or comment' });
+
+  db.run(
+    `INSERT INTO comments (postID, artistID, comment, createdAt) VALUES (?, ?, ?, datetime('now'))`,
+    [postId, req.session.artistID, comment],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to add comment' });
+      res.json({ message: 'Comment added', commentId: this.lastID });
+    }
+  );
+});
+
 
   const stmt = db.prepare('INSERT INTO polls (eventName, songName, songPath) VALUES (?, ?, ?)');
   files.forEach((file, i) => {
