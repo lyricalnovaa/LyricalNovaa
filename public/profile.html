@@ -181,6 +181,21 @@
       background: #0044cc;
     }
 
+    /* Edit Profile Button */
+    #edit-profile-btn {
+      margin-top: 8px;
+      padding: 6px 12px;
+      background-color: #2c60d3;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+    }
+    #edit-profile-btn:hover {
+      background-color: #244fb0;
+    }
+
     /* Media Queries */
     @media (max-width: 768px) {
       header {
@@ -243,7 +258,7 @@
     <section class="profile-header">
       <img id="profile-pic" src="/static/default-pfp.png" alt="Profile Picture" />
       <h1 id="profile-name">@Loading...</h1>
-      <button id="edit-profile-btn" style="margin-top: 8px; padding: 6px 12px; background-color: #2c60d3; color: white; border: none; border-radius: 3px; cursor: pointer; transition: background-color 0.2s ease-in-out;" onmouseover="this.style.backgroundColor='#244fb0'" onmouseout="this.style.backgroundColor='#2c60d3'">Edit Profile</button>
+      <button id="edit-profile-btn">Edit Profile</button>
     </section>
 
     <section id="posts">
@@ -257,61 +272,91 @@
       <button id="alert-ok">OK</button>
     </div>
   </div>
+
   <!-- Edit Profile Modal -->
-<div id="edit-profile-modal" class="hidden" style="
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-">
-  <div style="
-    background: #000;
-    border: 3px solid #06f;
-    padding: 2rem;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 500px;
-    color: #fff;
-  ">
-    <h2>Edit Profile</h2>
-    <form id="edit-profile-form">
-      <label>
-        Profile Picture URL:<br />
-        <input type="text" id="edit-profile-pic-url" placeholder="Paste image URL here" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem; margin-bottom: 1rem; border-radius: 5px; border: 1px solid #06f; background: #111; color: #fff;" />
-      </label>
-      <label>
-        Bio:<br />
-        <textarea id="edit-bio" rows="3" placeholder="Tell people about yourself..." style="width: 100%; padding: 0.5rem; margin-top: 0.25rem; margin-bottom: 1rem; border-radius: 5px; border: 1px solid #06f; background: #111; color: #fff;"></textarea>
-      </label>
-      <label>
-        Tags (up to 5, comma separated):<br />
-        <input type="text" id="edit-tags" placeholder="e.g. Juice WRLD, Lil Baby, Producer" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem; border-radius: 5px; border: 1px solid #06f; background: #111; color: #fff;" />
-      </label>
-      <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 10px;">
-        <button type="button" id="cancel-edit-profile" style="
-          background: #444;
-          border: none;
-          padding: 0.5rem 1rem;
-          color: #fff;
-          border-radius: 5px;
-          cursor: pointer;
-        ">Cancel</button>
-        <button type="submit" style="
-          background: #06f;
-          border: none;
-          padding: 0.5rem 1rem;
-          color: #fff;
-          border-radius: 5px;
-          cursor: pointer;
-        ">Save</button>
-      </div>
-    </form>
+  <div id="edit-profile-modal" class="hidden" style="
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    ">
+    <div style="
+      background: #000;
+      border: 3px solid #06f;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      color: #fff;
+    ">
+      <h2>Edit Profile</h2>
+      <form id="edit-profile-form">
+        <label>
+          Profile Picture URL:<br />
+          <input
+            type="text"
+            id="edit-profile-pic-url"
+            placeholder="Paste image URL here"
+            style="width: 100%; padding: 0.5rem; margin-top: 0.25rem; margin-bottom: 1rem; border-radius: 5px; border: 1px solid #06f; background: #111; color: #fff;"
+          />
+        </label>
+        <label>
+          Bio:<br />
+          <textarea
+            id="edit-bio"
+            rows="3"
+            placeholder="Tell people about yourself..."
+            style="width: 100%; padding: 0.5rem; margin-top: 0.25rem; margin-bottom: 1rem; border-radius: 5px; border: 1px solid #06f; background: #111; color: #fff;"
+          ></textarea>
+        </label>
+        <label>
+          Tags (up to 5, comma separated):<br />
+          <input
+            type="text"
+            id="edit-tags"
+            placeholder="e.g. Juice WRLD, Lil Baby, Producer"
+            style="width: 100%; padding: 0.5rem; margin-top: 0.25rem; border-radius: 5px; border: 1px solid #06f; background: #111; color: #fff;"
+          />
+        </label>
+        <div
+          style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 10px;"
+        >
+          <button
+            type="button"
+            id="cancel-edit-profile"
+            style="
+              background: #444;
+              border: none;
+              padding: 0.5rem 1rem;
+              color: #fff;
+              border-radius: 5px;
+              cursor: pointer;
+            "
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            style="
+              background: #06f;
+              border: none;
+              padding: 0.5rem 1rem;
+              color: #fff;
+              border-radius: 5px;
+              cursor: pointer;
+            "
+          >
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
+
   <script src="/static/profile.js"></script>
 </body>
 </html>
