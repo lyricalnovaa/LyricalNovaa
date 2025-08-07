@@ -2,100 +2,67 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profile - Lyrical Novaa</title>
-  <link rel="stylesheet" href="static/style.css" />
+  <link rel="stylesheet" href="/static/style.css" />
   <style>
     body {
       background-color: #000;
       color: #fff;
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
-      padding: 0;
     }
 
     header {
-      position: relative;
       display: flex;
       align-items: center;
-      padding: 1.5rem 2rem;
+      justify-content: space-between;
+      padding: 1rem;
       background: #000;
       box-shadow: 0 0 10px #06f;
-      height: 70px;
-      z-index: 10000;
     }
 
     .logo {
-      position: fixed;
-      top: 25px;
-      right: 20px;
-      height: 60px;
-      width: 110px;
-      cursor: pointer;
-      z-index: 10001;
+      height: 50px;
     }
 
     #menu-btn {
-      font-size: 3rem;
+      font-size: 2rem;
+      color: #06f;
       background: transparent;
       border: none;
-      color: #06f;
-      cursor: pointer;
-      position: fixed;
-      top: 10px;
-      left: -910px;
-      z-index: 10001;
     }
 
     nav#menu {
-      position: fixed;
-      top: 100px;
-      left: 66px;
+      position: absolute;
+      top: 70px;
+      left: 1rem;
       background: #000;
+      border: 1px solid #06f;
       padding: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 0 15px #06f;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      z-index: 10000;
-    }
-
-    nav#menu.hidden {
+      border-radius: 10px;
       display: none;
+      flex-direction: column;
     }
 
-    nav#menu a,
-    nav#menu button {
+    nav#menu a, nav#menu button {
       color: #06f;
       text-decoration: none;
-      font-weight: 700;
-      cursor: pointer;
       background: none;
       border: none;
-      padding: 0;
-      font-size: 1rem;
-    }
-
-    nav#menu button:hover,
-    nav#menu a:hover {
-      color: #cce0ff;
-    }
-
-    /* Highlight active nav link */
-    nav#menu a.active {
-      color: #fff;
-      text-shadow: 0 0 10px #06f;
+      font-weight: bold;
+      margin: 0.5rem 0;
+      cursor: pointer;
     }
 
     main {
-      padding: 2rem;
-      max-width: 700px;
+      max-width: 800px;
       margin: auto;
+      padding: 2rem 1rem;
     }
 
     .profile-header {
       text-align: center;
-      margin-bottom: 2rem;
     }
 
     .profile-header img {
@@ -107,9 +74,41 @@
     }
 
     .profile-header h1 {
-      margin-top: 1rem;
-      font-size: 2.5rem;
+      margin: 1rem 0 0.5rem;
       color: #06f;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .tag {
+      background: #111;
+      border: 1px solid #06f;
+      padding: 0.3rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+
+    .bio {
+      margin-top: 1rem;
+      font-style: italic;
+      color: #ccc;
+    }
+
+    .edit-btn {
+      background: #06f;
+      border: none;
+      padding: 0.5rem 1rem;
+      color: white;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 1rem;
     }
 
     .post {
@@ -117,85 +116,55 @@
       border: 2px solid #0044cc;
       border-radius: 10px;
       padding: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .post p {
-      font-size: 1.2rem;
+      margin: 1.5rem 0;
     }
 
     .post button {
-      margin-top: 1rem;
       background: #06f;
-      color: #fff;
-      border: none;
-      padding: 0.5rem 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    .post button:hover {
-      background: #0044cc;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    /* Alert Modal */
-    #alert-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.85);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    #alert-modal.hidden {
-      display: none;
-    }
-
-    .modal-content {
-      background: #000;
-      border: 3px solid #06f;
-      padding: 2rem;
-      border-radius: 12px;
-      text-align: center;
-    }
-
-    #alert-text {
-      color: #fff;
-      font-size: 1.2rem;
-      margin-bottom: 1rem;
-    }
-
-    #alert-ok {
-      background: #06f;
-      border: none;
-      padding: 0.5rem 1.5rem;
       color: white;
-      font-weight: bold;
-      border-radius: 6px;
+      border: none;
+      padding: 0.3rem 0.8rem;
+      margin-top: 0.5rem;
+      border-radius: 5px;
       cursor: pointer;
     }
 
-    #alert-ok:hover {
-      background: #0044cc;
+    #edit-widget {
+      display: none;
+      background: #111;
+      padding: 1rem;
+      border: 2px solid #06f;
+      border-radius: 10px;
+      margin-top: 1.5rem;
+    }
+
+    #edit-widget input, #edit-widget textarea {
+      width: 100%;
+      background: #000;
+      border: 1px solid #06f;
+      color: white;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      border-radius: 6px;
+    }
+
+    #edit-widget button {
+      background: #06f;
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <header>
-    <img src="static/logo.png" alt="Lyrical Novaa Logo" class="logo" />
+    <img src="/static/logo.png" class="logo" alt="Logo">
     <button id="menu-btn">☰</button>
-    <nav id="menu" class="hidden">
-      <a href="/home" id="home-link">Home</a>
+    <nav id="menu">
+      <a href="/home">Home</a>
       <a href="/settings">Settings</a>
       <button id="logout-btn">Logout</button>
     </nav>
@@ -203,22 +172,24 @@
 
   <main>
     <section class="profile-header">
-      <img id="profile-pic" src="/static/default-pfp.png" alt="Profile Picture" />
-      <h1 id="profile-name">@Loading...</h1>
+      <img id="profile-pic" src="/static/default-pfp.png" alt="Profile Picture">
+      <h1 id="profile-name">@loading...</h1>
+      <div class="tags" id="profile-tags"></div>
+      <div class="bio" id="profile-bio">Loading bio...</div>
+      <button class="edit-btn" id="edit-profile-btn" style="display:none;">Edit Profile</button>
+
+      <div id="edit-widget">
+        <label>Upload New PFP: <input type="file" id="new-pfp"></label>
+        <label>Update Bio: <textarea id="new-bio" rows="3"></textarea></label>
+        <label>Add Tags (comma separated, max 5): <input type="text" id="new-tags"></label>
+        <button id="save-profile">Save</button>
+      </div>
     </section>
 
     <section id="posts">
       <p>Loading posts...</p>
     </section>
   </main>
-
-  <!-- Alert Modal -->
-  <div id="alert-modal" class="hidden">
-    <div class="modal-content">
-      <p id="alert-text"></p>
-      <button id="alert-ok">OK</button>
-    </div>
-  </div>
 
   <script src="/static/profile.js"></script>
 </body>
