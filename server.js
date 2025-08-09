@@ -407,6 +407,14 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get("/api/current-user", (req, res) => {
+  if (req.session && req.session.user) {
+    return res.json({ username: req.session.user.username });
+  }
+  res.status(401).json({ error: "Not logged in" });
+});
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
