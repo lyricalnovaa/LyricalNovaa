@@ -14,14 +14,15 @@
     }
 
     header {
-      position: relative;
+      position: sticky;
+      top: 0;
       display: flex;
       align-items: center;
       padding: 1.5rem 2rem;
       background: #000;
       box-shadow: 0 0 10px #06f;
       height: 70px;
-      z-index: 10000;
+      z-index: 1000;
       justify-content: space-between;
     }
 
@@ -31,34 +32,21 @@
       border: none;
       color: #06f;
       cursor: pointer;
-      position: fixed;
-      top: 20px;
-      left: 16px;
-      z-index: 10001;
     }
 
     #menu-title {
       font-size: 2rem;
-      color: #06f;
       font-weight: bold;
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      top: 24px;
-      z-index: 10001;
+      color: #06f;
     }
 
     #logo {
-      position: fixed;
-      top: 20px;
-      right: 16px;
       height: 45px;
       cursor: pointer;
-      z-index: 10001;
     }
 
     nav#menu {
-      position: fixed;
+      position: absolute;
       top: 70px;
       left: 16px;
       background: #000;
@@ -68,7 +56,7 @@
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      z-index: 10000;
+      z-index: 1000;
     }
 
     nav#menu.hidden {
@@ -86,91 +74,96 @@
       font-size: 1rem;
     }
 
-    nav#menu button:hover, nav#menu a:hover {
+    nav#menu a:hover, nav#menu button:hover {
       color: #cce0ff;
     }
 
-    /* New Facebook-style post input */
-    #post-creator {
+    /* Feed styles */
+    #feed {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px 10px 80px; /* bottom padding for + button space */
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .post {
       background: #111;
       border: 1px solid #06f;
       border-radius: 12px;
-      padding: 12px;
-      margin: 100px auto 20px;
-      max-width: 600px;
       box-shadow: 0 0 15px #06f;
+      overflow: hidden;
+    }
+
+    .post-header {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 10px;
-      color: #06f;
-    }
-
-    #logged-in-user {
-      font-weight: 700;
-      font-size: 1rem;
-      user-select: none;
-    }
-
-    #post-input {
-      background: #000;
-      color: #fff;
-      border: 1px solid #06f;
-      border-radius: 8px;
       padding: 10px;
-      font-size: 1rem;
-      resize: vertical;
-      outline: none;
-      transition: border-color 0.3s ease;
     }
 
-    #post-input:focus {
-      border-color: #3af;
+    .post-header img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid #06f;
     }
 
-    #submit-post {
-      align-self: flex-end;
-      background-color: #06f;
+    .post-header a {
+      color: #06f;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .post-header a:hover {
+      color: #cce0ff;
+    }
+
+    .post-content {
+      padding: 10px;
       color: #fff;
-      font-weight: 700;
-      border: none;
+    }
+
+    .post-content img, .post-content video {
+      max-width: 100%;
       border-radius: 8px;
-      padding: 8px 20px;
+      margin-top: 10px;
+    }
+
+    /* Floating + button */
+    #add-post-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #06f;
+      color: #fff;
+      font-size: 2rem;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
       cursor: pointer;
       box-shadow: 0 0 10px #06f;
-      transition: background-color 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
     }
 
-    #submit-post:disabled {
-      background-color: #0044aa;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    #submit-post:not(:disabled):hover {
-      background-color: #0a7fff;
+    #add-post-btn:hover {
+      background: #0a7fff;
     }
 
     @media (max-width: 768px) {
       #menu-title {
         font-size: 1.5rem;
-        top: 26px;
       }
-
       #logo {
         height: 40px;
-        top: 22px;
       }
-
       #menu-btn {
         font-size: 2rem;
-        top: 22px;
-      }
-
-      nav#menu {
-        top: 70px;
-        left: 10px;
-        width: calc(100% - 20px);
-        box-sizing: border-box;
       }
     }
   </style>
@@ -190,12 +183,22 @@
     <button id="logout-btn">Logout</button>
   </nav>
 
-  <!-- Facebook-style post input -->
-  <section id="post-creator">
-    <div id="logged-in-user">@username</div>
-    <textarea id="post-input" placeholder="What's on your mind?" rows="3"></textarea>
-    <button id="submit-post" disabled>Post</button>
-  </section>
+  <main id="feed">
+    <!-- Example post -->
+    <div class="post">
+      <div class="post-header">
+        <img src="/static/default-pfp.png" alt="Profile Picture" />
+        <a href="/profile/username">@username</a>
+      </div>
+      <div class="post-content">
+        This is an example post. It could have text, images, or videos.
+        <img src="/static/sample.jpg" alt="Post Image">
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating + Button -->
+  <button id="add-post-btn">+</button>
 
   <script src="/static/home.js"></script>
 </body>
