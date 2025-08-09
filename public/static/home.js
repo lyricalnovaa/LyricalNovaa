@@ -1,5 +1,3 @@
-// /static/home.js
-
 document.addEventListener("DOMContentLoaded", () => {
   const menuBtn = document.getElementById("menu-btn");
   const menu = document.getElementById("menu");
@@ -157,4 +155,56 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // =========================
+  // Feed loading and rendering
+  // =========================
+
+  const feedContainer = document.getElementById('feed');
+
+  async function loadFeed() {
+    if (!feedContainer) return; // no feed container? bail
+
+    try {
+      const res = await fetch('/api/posts');
+      if (!res.ok) throw new Error('Failed to fetch posts');
+      const posts = await res.json();
+
+      feedContainer.innerHTML = ''; // clear current feed
+
+      posts.forEach(post => {
+        const postEl = document.createElement('div');
+        postEl.className = 'post';
+
+        postEl.innerHTML = `
+          <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom: 6px;">
+            <img src="${post.profilePhotoPath || '/static/default-profile.png'}" alt="Profile Picture" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" />
+            <a href="/profile/${post.artistID}" style="color:#06f; font-weight:bold; text-decoration:none;">@${post.artistName || post.artistID}</a>
+          </div>
+          <div class="post-content" style="color:#eee; margin-bottom: 12px;">${post.content || ''}</div>
+        `;
+
+        feedContainer.appendChild(postEl);
+      });
+    } catch (err) {
+      feedContainer.textContent = 'Failed to load feed.';
+    }
+  }
+
+  // Fix logged-in user display (use artistID instead of username)
+  fetch("/api/current-user")
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.artistID) {
+        const loggedInUserEl = document.getElementById("logged-in-user");
+        if (loggedInUserEl) loggedInUserEl.textContent = "@" + data.artistID;
+      }
+    })
+    .catch(() => {
+      const loggedInUserEl = document.getElementById("logged-in-user");
+      if (loggedInUserEl) loggedInUserEl.textContent = "@unknown";
+    });
+
+  // Load feed on page load
+  loadFeed();
 });
