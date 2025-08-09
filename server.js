@@ -240,7 +240,50 @@ app.post('/api/polls', (req, res, next) => {
   if (!eventName || !files || !names || files.length !== names.length) {
     return res.status(400).json({ error: 'Missing or mismatched poll data' });
   }
-  const postUpload = multer({
+
+  const stmt = db.prepare('INSERT INTO polls (eventName, songName, songPath) VALUES (?, ?, ?)');
+  files.forEach((file, i) => {
+    stmt.run(eventName, names[i], `/uploads/${file.filename}`);
+  });
+  stmt.finalize();
+
+  res.json({ message: 'Poll created' });
+});
+
+// ADMIN ONLY: Delete polls/events
+app.delete('/api/polls/:id', (req, res, next) => {
+  if (req.session.userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only admins can delete polls/events' });
+  }
+  next();
+});
+
+app.delete('/api/polls/:id', (req, res) => {
+  const pollId = req.params.id;
+  db.run('DELETE FROM polls WHERE id = ?', [pollId], function(err) {
+    if (err) return res.status(500).json({ error: 'Failed to delete poll/event' });
+    if (this.changes === 0) return res.status(404).json({ error: 'Poll/event not found' });
+    res.json({ message: 'Poll/event deleted successfully' });
+  });
+});
+
+// USERS CAN VOTE, ADMINS CAN'T
+app.post('/api/vote', (req, res, next) => {
+  if (req.session.userRole === 'admin') {
+    return res.status(403).json({ error: 'Admins cannot vote' });
+  }
+  next();
+}, (req, res) => {
+  const { pollId } = req.body;
+  if (!pollId) return res.status(400).json({ error: 'Missing poll ID' });
+  db.run('UPDATE polls SET votes = votes + 1 WHERE id = ?', [pollId], (err) => {
+    if (err) return res.status(500).json({ error: 'Vote failed' });
+    res.json({ message: 'Vote counted' });
+  });
+});
+
+// Post media upload config
+const postUpload = multer({
   dest: path.join(__dirname, 'uploads/posts/'),
   limits: { fileSize: 50 * 1024 * 1024 }, // max 50MB for media
   fileFilter: (req, file, cb) => {
@@ -336,67 +379,15 @@ app.post('/api/comment', (req, res) => {
   );
 });
 
-
-  const stmt = db.prepare('INSERT INTO polls (eventName, songName, songPath) VALUES (?, ?, ?)');
-  files.forEach((file, i) => {
-    stmt.run(eventName, names[i], `/uploads/${file.filename}`);
-  });
-  stmt.finalize();
-
-  res.json({ message: 'Poll created' });
-});
-
-// ADMIN ONLY: Delete polls/events
-app.delete('/api/polls/:id', (req, res, next) => {
-  if (req.session.userRole !== 'admin') {
-    return res.status(403).json({ error: 'Only admins can delete polls/events' });
-  }
-  next();
-});
-
-app.delete('/api/polls/:id', (req, res) => {
-  const pollId = req.params.id;
-  db.run('DELETE FROM polls WHERE id = ?', [pollId], function(err) {
-    if (err) return res.status(500).json({ error: 'Failed to delete poll/event' });
-    if (this.changes === 0) return res.status(404).json({ error: 'Poll/event not found' });
-    res.json({ message: 'Poll/event deleted successfully' });
-  });
-});
-
-// USERS CAN VOTE, ADMINS CAN'T
-app.post('/api/vote', (req, res, next) => {
-  if (req.session.userRole === 'admin') {
-    return res.status(403).json({ error: 'Admins cannot vote' });
-  }
-  next();
-}, (req, res) => {
-  const { pollId } = req.body;
-  if (!pollId) return res.status(400).json({ error: 'Missing poll ID' });
-  db.run('UPDATE polls SET votes = votes + 1 WHERE id = ?', [pollId], (err) => {
-    if (err) return res.status(500).json({ error: 'Vote failed' });
-    res.json({ message: 'Vote counted' });
-  });
-});
-
-// NEW - Return current logged-in user info (artistID and role)
+// NEW - Return current logged-in user info (artistID, username, role)
 app.get('/api/current-user', (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-  res.json({ artistID: req.session.artistID, role: req.session.userRole });
-});
 
-// NEW - Post creation endpoint
-app.post('/api/post', (req, res) => {
-  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-
-  const { content } = req.body;
-  if (!content || content.trim() === '') {
-    return res.status(400).json({ error: 'Post content cannot be empty' });
-  }
-
-  // For now just console log the post, later you can add DB logic
-  console.log(`User ${req.session.artistID} posted: ${content}`);
-
-  res.json({ message: 'Post created!' });
+  db.get('SELECT artistName AS username, artistID, role FROM users WHERE artistID = ?', [req.session.artistID], (err, user) => {
+    if (err) return res.status(500).json({ error: 'DB error fetching user' });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user); // { username, artistID, role }
+  });
 });
 
 // Auth redirect middleware (leave this last)
@@ -406,14 +397,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-app.get("/api/current-user", (req, res) => {
-  if (req.session && req.session.user) {
-    return res.json({ username: req.session.user.username });
-  }
-  res.status(401).json({ error: "Not logged in" });
-});
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
