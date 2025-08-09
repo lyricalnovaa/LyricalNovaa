@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loggedInUserInline = document.getElementById("logged-in-user-inline");
 
   // Fetch logged-in user for inline post box username display
-  fetch("/api/user")
+  fetch("/api/current-user")
     .then(res => res.json())
     .then(data => {
       if (data && data.username) {
