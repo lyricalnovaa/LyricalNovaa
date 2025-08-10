@@ -1,37 +1,64 @@
+const sqlite3 = require('sqlite3').verbose();
 const admin = require('firebase-admin');
-const fs = require('fs');
 const path = require('path');
 
+// Firebase init
 const firebaseConfig = JSON.parse(Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString('utf8'));
 admin.initializeApp({
   credential: admin.credential.cert(firebaseConfig),
 });
-const db = admin.firestore();
+const dbFirebase = admin.firestore();
 
-// Example: Load your local DB file (adjust path)
-const localDB = JSON.parse(fs.readFileSync(path.join(__dirname, 'localdb.json'), 'utf8'));
+// Path to your LNPL.db
+const sqliteDBPath = path.join(__dirname, 'LNPL.db');
+const sqliteDB = new sqlite3.Database(sqliteDBPath, sqlite3.OPEN_READONLY);
+
+function migrateUsers() {
+  return new Promise((resolve, reject) => {
+    sqliteDB.all("SELECT * FROM users", async (err, rows) => {
+      if (err) return reject(err);
+
+      try {
+        for (const user of rows) {
+          await dbFirebase.collection('users').doc(user.artistID.toString()).set(user);
+          console.log(`Migrated user: ${user.artistID}`);
+        }
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
+
+function migratePosts() {
+  return new Promise((resolve, reject) => {
+    sqliteDB.all("SELECT * FROM posts", async (err, rows) => {
+      if (err) return reject(err);
+
+      try {
+        for (const post of rows) {
+          await dbFirebase.collection('posts').doc(post.id.toString()).set(post);
+          console.log(`Migrated post: ${post.id}`);
+        }
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
 
 async function migrate() {
   try {
-    // Example for users collection
-    const users = localDB.users; // Adjust based on your local DB structure
-    for (const user of users) {
-      await db.collection('users').doc(user.artistID).set(user);
-      console.log(`Migrated user: ${user.artistID}`);
-    }
-
-    // Example for posts collection
-    const posts = localDB.posts;
-    for (const post of posts) {
-      await db.collection('posts').doc(post.id).set(post);
-      console.log(`Migrated post: ${post.id}`);
-    }
-
-    console.log('Migration complete!');
-    process.exit(0);
+    await migrateUsers();
+    await migratePosts();
+    console.log('Migration complete.');
   } catch (err) {
-    console.error('Migration failed:', err);
-    process.exit(1);
+    console.error('Migration error:', err);
+  } finally {
+    sqliteDB.close();
+    process.exit(0);
   }
 }
 
