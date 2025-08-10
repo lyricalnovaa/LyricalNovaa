@@ -10,7 +10,8 @@ const app = express();
 const dbFile = './LNPL.db';
 const db = new sqlite3.Database(dbFile);
 
-const upload = multer({
+// multer for profile photo uploads (saved on disk)
+const profilePhotoUpload = multer({
   dest: path.join(__dirname, 'uploads/'),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
@@ -21,7 +22,20 @@ const upload = multer({
   },
 });
 
-// Create tables
+// multer for post media, using memory storage to store media as BLOB
+const postUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image/video files allowed'));
+    }
+  },
+});
+
+// Create tables (posts media changed to BLOB)
 const createUserTable = `CREATE TABLE IF NOT EXISTS users (
   artistID TEXT PRIMARY KEY,
   artistName TEXT,
@@ -41,11 +55,12 @@ const createPollTable = `CREATE TABLE IF NOT EXISTS polls (
   songPath TEXT NOT NULL,
   votes INTEGER DEFAULT 0
 )`;
+
 const createPostsTable = `CREATE TABLE IF NOT EXISTS posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   artistID TEXT NOT NULL,
   content TEXT,
-  mediaPath TEXT,
+  media BLOB,
   mediaType TEXT,
   createdAt TEXT DEFAULT (datetime('now'))
 )`;
@@ -74,7 +89,6 @@ db.serialize(() => {
   db.run(createCommentsTable);
   db.run(createLikesTable);
 });
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -120,6 +134,7 @@ app.get('/profile', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
 
+// API: Get logged-in user's profile data
 app.get('/api/profile', (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
   db.get('SELECT artistName, profilePhotoPath, bio, musicType FROM users WHERE artistID = ?', [req.session.artistID], (err, user) => {
@@ -129,6 +144,7 @@ app.get('/api/profile', (req, res) => {
   });
 });
 
+// API: Login
 app.post('/api/login', (req, res) => {
   const { artistID, password } = req.body;
   if (!artistID) return res.status(400).json({ error: 'Missing artistID' });
@@ -160,6 +176,7 @@ app.post('/api/login', (req, res) => {
   });
 });
 
+// API: Reset password
 app.post('/api/reset-password', async (req, res) => {
   const { artistID, newPassword } = req.body;
   if (!artistID || !newPassword || newPassword.length < 4) return res.status(400).json({ error: 'Invalid input' });
@@ -177,7 +194,8 @@ app.post('/api/reset-password', async (req, res) => {
   });
 });
 
-app.post('/api/create-account', upload.single('profilePhoto'), async (req, res) => {
+// API: Create account with profile photo upload (saved on disk)
+app.post('/api/create-account', profilePhotoUpload.single('profilePhoto'), async (req, res) => {
   try {
     const { artistName, email, role, bio = '', musicType, password } = req.body;
     if (!artistName || !email || !role || !password || !musicType) {
@@ -209,6 +227,7 @@ app.post('/api/create-account', upload.single('profilePhoto'), async (req, res) 
   }
 });
 
+// API: Logout
 app.post('/api/logout', (req, res) => {
   req.session.destroy(() => res.json({ message: 'Logged out' }));
 });
@@ -282,35 +301,22 @@ app.post('/api/vote', (req, res, next) => {
   });
 });
 
-// Post media upload config
-const postUpload = multer({
-  dest: path.join(__dirname, 'uploads/posts/'),
-  limits: { fileSize: 50 * 1024 * 1024 }, // max 50MB for media
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image/video files allowed'));
-    }
-  },
-});
-
-// Create a post with optional media
+// Create a post with optional media (stored as BLOB)
 app.post('/api/post', postUpload.single('media'), (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
 
   const content = req.body.content || '';
-  let mediaPath = null;
+  let mediaBuffer = null;
   let mediaType = null;
 
   if (req.file) {
-    mediaPath = `/uploads/posts/${req.file.filename}`;
+    mediaBuffer = req.file.buffer;
     mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
   }
 
   db.run(
-    `INSERT INTO posts (artistID, content, mediaPath, mediaType, createdAt) VALUES (?, ?, ?, ?, datetime('now'))`,
-    [req.session.artistID, content, mediaPath, mediaType],
+    `INSERT INTO posts (artistID, content, media, mediaType, createdAt) VALUES (?, ?, ?, ?, datetime('now'))`,
+    [req.session.artistID, content, mediaBuffer, mediaType],
     function (err) {
       if (err) return res.status(500).json({ error: 'Failed to create post' });
       res.json({ message: 'Post created', postId: this.lastID });
@@ -331,30 +337,47 @@ app.get('/api/posts', (req, res) => {
     [],
     (err, rows) => {
       if (err) return res.status(500).json({ error: 'Failed to fetch posts' });
-      res.json(rows);
+      const posts = rows.map(post => {
+        if (post.media) {
+          post.mediaUrl = `/api/post-media/${post.id}`;
+          delete post.media;
+        }
+        return post;
+      });
+      res.json(posts);
     }
   );
+});
+
+// Serve media blob for a post by ID
+app.get('/api/post-media/:postId', (req, res) => {
+  const postId = req.params.postId;
+  db.get('SELECT media, mediaType FROM posts WHERE id = ?', [postId], (err, row) => {
+    if (err || !row || !row.media) return res.status(404).send('Media not found');
+    const contentType = row.mediaType === 'image' ? 'image/*' : 'video/*';
+    res.set('Content-Type', contentType);
+    res.send(row.media);
+  });
 });
 
 // Like/unlike toggle endpoint
 app.post('/api/like', (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+  const { postID } = req.body;
+  if (!postID) return res.status(400).json({ error: 'Missing postID' });
 
-  const { postId } = req.body;
-  if (!postId) return res.status(400).json({ error: 'Missing postId' });
-
-  db.get(`SELECT id FROM likes WHERE postID = ? AND artistID = ?`, [postId, req.session.artistID], (err, row) => {
+  db.get('SELECT * FROM likes WHERE postID = ? AND artistID = ?', [postID, req.session.artistID], (err, row) => {
     if (err) return res.status(500).json({ error: 'DB error' });
 
     if (row) {
       // Unlike
-      db.run(`DELETE FROM likes WHERE id = ?`, [row.id], (err) => {
+      db.run('DELETE FROM likes WHERE id = ?', [row.id], (err) => {
         if (err) return res.status(500).json({ error: 'Failed to unlike' });
         res.json({ message: 'Unliked' });
       });
     } else {
       // Like
-      db.run(`INSERT INTO likes (postID, artistID, createdAt) VALUES (?, ?, datetime('now'))`, [postId, req.session.artistID], (err) => {
+      db.run('INSERT INTO likes (postID, artistID, createdAt) VALUES (?, ?, datetime(\'now\'))', [postID, req.session.artistID], (err) => {
         if (err) return res.status(500).json({ error: 'Failed to like' });
         res.json({ message: 'Liked' });
       });
@@ -362,16 +385,15 @@ app.post('/api/like', (req, res) => {
   });
 });
 
-// Add comment to a post
+// Comment on post endpoint
 app.post('/api/comment', (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-
-  const { postId, comment } = req.body;
-  if (!postId || !comment) return res.status(400).json({ error: 'Missing postId or comment' });
+  const { postID, comment } = req.body;
+  if (!postID || !comment) return res.status(400).json({ error: 'Missing postID or comment' });
 
   db.run(
-    `INSERT INTO comments (postID, artistID, comment, createdAt) VALUES (?, ?, ?, datetime('now'))`,
-    [postId, req.session.artistID, comment],
+    'INSERT INTO comments (postID, artistID, comment, createdAt) VALUES (?, ?, ?, datetime(\'now\'))',
+    [postID, req.session.artistID, comment],
     function (err) {
       if (err) return res.status(500).json({ error: 'Failed to add comment' });
       res.json({ message: 'Comment added', commentId: this.lastID });
@@ -379,25 +401,33 @@ app.post('/api/comment', (req, res) => {
   );
 });
 
-// NEW - Return current logged-in user info (artistID, username, role)
-app.get('/api/current-user', (req, res) => {
-  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+// Get comments for a post
+app.get('/api/comments/:postID', (req, res) => {
+  const postID = req.params.postID;
+  db.all(
+    `SELECT comments.*, users.artistName, users.profilePhotoPath
+    FROM comments
+    JOIN users ON comments.artistID = users.artistID
+    WHERE postID = ?
+    ORDER BY comments.createdAt ASC`,
+    [postID],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Failed to fetch comments' });
+      res.json(rows);
+    }
+  );
+});
 
-  db.get('SELECT artistName AS username, artistID, role FROM users WHERE artistID = ?', [req.session.artistID], (err, user) => {
-    if (err) return res.status(500).json({ error: 'DB error fetching user' });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user); // { username, artistID, role }
+// API: Get logged-in user info
+app.get('/api/user', (req, res) => {
+  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+  db.get('SELECT artistID, artistName, email, role FROM users WHERE artistID = ?', [req.session.artistID], (err, user) => {
+    if (err) return res.status(500).json({ error: 'DB error' });
+    res.json(user);
   });
 });
 
-// Auth redirect middleware (leave this last)
-app.use((req, res, next) => {
-  if (!req.session.artistID && !req.path.startsWith('/login') && !req.path.startsWith('/api')) {
-    return res.redirect('/login');
-  }
-  next();
-});
-
+// Server listening
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
