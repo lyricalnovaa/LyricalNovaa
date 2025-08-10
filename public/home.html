@@ -78,57 +78,13 @@
       color: #cce0ff;
     }
 
-    /* Feed styles */
     #feed {
       max-width: 600px;
       margin: 0 auto;
-      padding: 20px 10px 80px; /* bottom padding for + button space */
+      padding: 20px 10px 80px;
       display: flex;
       flex-direction: column;
       gap: 20px;
-    }
-
-    .post {
-      background: #111;
-      border: 1px solid #06f;
-      border-radius: 12px;
-      box-shadow: 0 0 15px #06f;
-      overflow: hidden;
-    }
-
-    .post-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px;
-    }
-
-    .post-header img {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 1px solid #06f;
-    }
-
-    .post-header a {
-      color: #06f;
-      font-weight: bold;
-      text-decoration: none;
-    }
-
-    .post-header a:hover {
-      color: #cce0ff;
-    }
-
-    .post-content {
-      padding: 10px;
-      color: #fff;
-    }
-
-    .post-content img, .post-content video {
-      max-width: 100%;
-      border-radius: 8px;
-      margin-top: 10px;
     }
 
     /* Floating + button */
@@ -150,21 +106,66 @@
       justify-content: center;
       z-index: 2000;
     }
-
     #add-post-btn:hover {
       background: #0a7fff;
     }
 
-    @media (max-width: 768px) {
-      #menu-title {
-        font-size: 1.5rem;
-      }
-      #logo {
-        height: 40px;
-      }
-      #menu-btn {
-        font-size: 2rem;
-      }
+    /* Modal styling */
+    #create-post-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 3000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #111;
+      border: 1px solid #06f;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 15px #06f;
+      max-width: 500px;
+      width: 90%;
+    }
+    .modal-content h2 {
+      margin-top: 0;
+      color: #06f;
+    }
+    .modal-content textarea {
+      width: 100%;
+      height: 100px;
+      border: 1px solid #06f;
+      border-radius: 8px;
+      background: #000;
+      color: #fff;
+      padding: 10px;
+      resize: none;
+    }
+    .modal-actions {
+      margin-top: 15px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-cancel {
+      background: #333;
+      color: #06f;
+    }
+    .btn-post {
+      background: #06f;
+      color: #fff;
+    }
+    .btn-post:hover {
+      background: #0a7fff;
     }
   </style>
 </head>
@@ -173,6 +174,7 @@
   <header>
     <button id="menu-btn" aria-label="Menu">☰</button>
     <div id="menu-title">Lyrical Novaa</div>
+    <span id="logged-in-user">@username</span>
     <img id="logo" src="/static/logo.png" alt="Lyrical Novaa Logo" />
   </header>
 
@@ -184,21 +186,23 @@
   </nav>
 
   <main id="feed">
-    <!-- Example post -->
-    <div class="post">
-      <div class="post-header">
-        <img src="/static/default-pfp.png" alt="Profile Picture" />
-        <a href="/profile/username">@username</a>
-      </div>
-      <div class="post-content">
-        This is an example post. It could have text, images, or videos.
-        <img src="/static/sample.jpg" alt="Post Image">
-      </div>
-    </div>
+    <!-- posts will load here -->
   </main>
 
   <!-- Floating + Button -->
   <button id="add-post-btn">+</button>
+
+  <!-- Create Post Modal -->
+  <div id="create-post-modal">
+    <div class="modal-content">
+      <h2>Create Post</h2>
+      <textarea id="post-text" placeholder="What's on your mind?"></textarea>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" id="cancel-post">Cancel</button>
+        <button class="btn btn-post" id="submit-post">Post</button>
+      </div>
+    </div>
+  </div>
 
   <script src="/static/home.js"></script>
 </body>
