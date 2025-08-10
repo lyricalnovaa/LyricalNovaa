@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // =========================
 
   const createPostBtn = document.getElementById("add-post-btn");
-  const postModal = document.getElementById("post-modal");
+  const postModal = document.getElementById("create-post-modal");
   const cancelPostBtn = document.getElementById("cancel-post");
   const submitPostBtn = document.getElementById("submit-post");
   const postTextArea = document.getElementById("post-text");
