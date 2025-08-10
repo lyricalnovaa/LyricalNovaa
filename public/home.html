@@ -144,6 +144,44 @@
       left: 10px;
       resize: none;
     }
+    #create-post-modal label[for="file-upload"] {
+      margin-top: 10px;
+      cursor: pointer;
+      color: #06f;
+      font-weight: 700;
+      border: 2px dashed #06f;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      user-select: none;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    #create-post-modal label[for="file-upload"]:hover {
+      background: #06f;
+      color: #000;
+    }
+
+    #create-post-modal #file-upload {
+      display: none;
+    }
+
+    #create-post-modal #file-preview {
+      margin-top: 10px;
+      color: #eee;
+      max-height: 150px;
+      overflow: auto;
+      font-size: 0.9rem;
+      user-select: text;
+    }
+
+    #create-post-modal #file-preview img,
+    #create-post-modal #file-preview video {
+      max-width: 100%;
+      margin-top: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px #06f;
+    }
     .modal-actions {
       margin-top: 15px;
       display: flex;
@@ -197,6 +235,10 @@
     <div class="modal-content">
       <h2>Create Post</h2>
       <textarea id="post-text" placeholder="What's on your mind?"></textarea>
+      <label for="file-upload" style="margin-top:10px; display:block; cursor:pointer; color:#06f; font-weight:bold; border:2px dashed #06f; border-radius:8px; padding:10px; text-align:center;">Upload File</label>
+      <input type="file" id="file-upload" style="display:none;" />
+
+    <div id="file-preview" style="margin-top:10px; color:#eee; max-height:150px; overflow:auto;"></div>
       <div class="modal-actions">
         <button class="btn btn-cancel" id="cancel-post">Cancel</button>
         <button class="btn btn-post" id="submit-post">Post</button>
