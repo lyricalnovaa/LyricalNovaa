@@ -45,6 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const submitPostBtn = document.getElementById("submit-post");
   const postTextArea = document.getElementById("post-text");
   const loggedInUserEl = document.getElementById("logged-in-user");
+  const fileUploadInput = document.getElementById("file-upload");
+  const filePreview = document.getElementById("file-preview");
+  let uploadedFile = null;
 
   // Fetch logged-in user
   fetch("/api/current-user")
@@ -68,27 +71,84 @@ document.addEventListener("DOMContentLoaded", () => {
   cancelPostBtn.onclick = () => {
     postModal.style.display = "none";
     postTextArea.value = "";
+    clearFilePreview();
   };
 
-  // Submit post modal
+  // File upload preview
+  fileUploadInput.addEventListener("change", () => {
+    const file = fileUploadInput.files[0];
+    uploadedFile = file || null;
+    clearFilePreview();
+
+    if (!file) return;
+
+    const fileType = file.type;
+    const reader = new FileReader();
+
+    if (fileType.startsWith("image/")) {
+      reader.onload = e => {
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        filePreview.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    } else if (fileType.startsWith("video/")) {
+      reader.onload = e => {
+        const video = document.createElement("video");
+        video.src = e.target.result;
+        video.controls = true;
+        filePreview.appendChild(video);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Show file name and size for other types
+      const info = document.createElement("p");
+      info.textContent = `File: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+      filePreview.appendChild(info);
+    }
+  });
+
+  function clearFilePreview() {
+    filePreview.innerHTML = "";
+    uploadedFile = null;
+    fileUploadInput.value = "";
+  }
+
+  // Submit post modal (with optional file upload)
   submitPostBtn.onclick = async () => {
     const content = postTextArea.value.trim();
-    if (!content) {
-      showAlert("Post content cannot be empty.");
+    if (!content && !uploadedFile) {
+      showAlert("Post content or a file is required.");
       return;
     }
 
     try {
+      let body;
+      let headers;
+
+      if (uploadedFile) {
+        // Use FormData if there's a file
+        body = new FormData();
+        body.append("content", content);
+        body.append("file", uploadedFile);
+        headers = {}; // browser sets multipart/form-data automatically
+      } else {
+        // JSON only if no file
+        body = JSON.stringify({ content });
+        headers = { "Content-Type": "application/json" };
+      }
+
       const res = await fetch("/api/post", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content })
+        headers,
+        body,
       });
 
       if (res.ok) {
         showAlert("Post created!", () => {
           postModal.style.display = "none";
           postTextArea.value = "";
+          clearFilePreview();
         });
       } else {
         showAlert("Failed to post.");
