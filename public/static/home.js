@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
   //  Create Post Modal Logic
   // =========================
 
-  const createPostBtn = document.getElementById("create-post-btn");
+  const createPostBtn = document.getElementById("add-post-btn");
   const postModal = document.getElementById("post-modal");
   const cancelPostBtn = document.getElementById("cancel-post");
   const submitPostBtn = document.getElementById("submit-post");
