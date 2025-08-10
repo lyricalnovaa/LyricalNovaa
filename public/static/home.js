@@ -50,8 +50,8 @@ document.addEventListener("DOMContentLoaded", () => {
   fetch("/api/current-user")
     .then(res => res.json())
     .then(data => {
-      if (data && data.username) {
-        loggedInUserEl.textContent = "@" + data.username;
+      if (data && data.artistID) {
+        loggedInUserEl.textContent = "@" + data.artistID;
       }
     })
     .catch(() => {
@@ -110,8 +110,8 @@ document.addEventListener("DOMContentLoaded", () => {
   fetch("/api/current-user")
     .then(res => res.json())
     .then(data => {
-      if (data && data.username) {
-        if (loggedInUserInline) loggedInUserInline.textContent = "@" + data.username;
+      if (data && data.artistID) {
+        if (loggedInUserInline) loggedInUserInline.textContent = "@" + data.artistID;
       }
     })
     .catch(() => {
