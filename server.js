@@ -455,6 +455,84 @@ app.get('/api/user', async (req, res) => {
   }
 });
 
+
+// ==========================
+// ADD THIS AT THE BOTTOM BELOW ALL YOUR EXISTING CODE
+// ==========================
+
+const sqlite3 = require('sqlite3').verbose();
+const sqliteDBPath = path.join(__dirname, 'LNPL.db');
+const sqliteDB = new sqlite3.Database(sqliteDBPath);
+
+// Helper: Compare two objects shallowly via JSON stringify (basic, but works)
+function hasChanged(oldData, newData) {
+  return JSON.stringify(oldData) !== JSON.stringify(newData);
+}
+
+// Sync users from SQLite to Firebase
+async function syncUsers() {
+  return new Promise((resolve, reject) => {
+    sqliteDB.all("SELECT * FROM users", async (err, rows) => {
+      if (err) return reject(err);
+      try {
+        for (const user of rows) {
+          const docRef = db.collection('users').doc(user.artistID.toString());
+          const docSnap = await docRef.get();
+          if (!docSnap.exists || hasChanged(docSnap.data(), user)) {
+            await docRef.set(user);
+            console.log(`Synced user ${user.artistID}`);
+          }
+        }
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
+
+// Sync posts from SQLite to Firebase
+async function syncPosts() {
+  return new Promise((resolve, reject) => {
+    sqliteDB.all("SELECT * FROM posts", async (err, rows) => {
+      if (err) return reject(err);
+      try {
+        for (const post of rows) {
+          const docRef = db.collection('posts').doc(post.id.toString());
+          const docSnap = await docRef.get();
+          if (!docSnap.exists || hasChanged(docSnap.data(), post)) {
+            await docRef.set(post);
+            console.log(`Synced post ${post.id}`);
+          }
+        }
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
+
+// Main periodic sync function
+async function periodicSync() {
+  try {
+    await syncUsers();
+    await syncPosts();
+    console.log('Periodic sync completed at', new Date().toISOString());
+  } catch (error) {
+    console.error('Periodic sync error:', error);
+  }
+}
+
+// Run first sync on server start
+periodicSync();
+
+// Set interval every 5 minutes (300,000 ms)
+setInterval(periodicSync, 300000);
+
+
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
