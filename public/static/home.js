@@ -149,6 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
           postModal.style.display = "none";
           postTextArea.value = "";
           clearFilePreview();
+          loadFeed(); // Reload feed ONLY for current user after posting
         });
       } else {
         showAlert("Failed to post.");
@@ -206,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("Post created!");
           postInput.value = "";
           submitPostBtnInline.disabled = true;
-          // TODO: refresh posts feed here if you build it
+          loadFeed(); // Reload feed ONLY for current user after posting
         } else {
           alert("Failed to post.");
         }
@@ -236,12 +237,23 @@ document.addEventListener("DOMContentLoaded", () => {
         const postEl = document.createElement('div');
         postEl.className = 'post';
 
+        // Media preview HTML logic
+        let mediaHTML = '';
+        if (post.mediaType === 'image') {
+          mediaHTML = `<img src="/api/post-media/${post.id}" alt="Post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />`;
+        } else if (post.mediaType === 'video') {
+          mediaHTML = `<video controls style="max-width:100%; border-radius:8px; margin-top:8px;">
+                         <source src="/api/post-media/${post.id}" type="video/mp4" />
+                       </video>`;
+        }
+
         postEl.innerHTML = `
           <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom: 6px;">
             <img src="${post.profilePhotoPath || '/static/default-pfp.png'}" alt="Profile Picture" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" />
             <a href="/profile/${post.artistID}" style="color:#06f; font-weight:bold; text-decoration:none;">@${post.artistName || post.artistID}</a>
           </div>
           <div class="post-content" style="color:#eee; margin-bottom: 12px;">${post.content || ''}</div>
+          ${mediaHTML}
         `;
 
         feedContainer.appendChild(postEl);
