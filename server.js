@@ -1,94 +1,46 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const session = require('express-session');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+
+const admin = require('firebase-admin');
 const app = express();
 
-const dbFile = './LNPL.db';
-const db = new sqlite3.Database(dbFile);
+// Initialize Firebase Admin from base64 env var
+const firebaseConfig = JSON.parse(Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString('utf8'));
+admin.initializeApp({
+  credential: admin.credential.cert(firebaseConfig),
+});
+const db = admin.firestore();
 
-// multer for profile photo uploads (saved on disk)
+// Multer configs
 const profilePhotoUpload = multer({
   dest: path.join(__dirname, 'uploads/'),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image files allowed'));
-    }
+    if (!file.mimetype.startsWith('image/')) return cb(new Error('Only image files allowed'));
     cb(null, true);
   },
 });
 
-// multer for post media, using memory storage to store media as BLOB
 const postUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB max
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image/video files allowed'));
-    }
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) cb(null, true);
+    else cb(new Error('Only image/video files allowed'));
   },
 });
 
-// Create tables (posts media changed to BLOB)
-const createUserTable = `CREATE TABLE IF NOT EXISTS users (
-  artistID TEXT PRIMARY KEY,
-  artistName TEXT,
-  email TEXT UNIQUE,
-  password TEXT NOT NULL,
-  role TEXT,
-  bio TEXT,
-  musicType TEXT,
-  profilePhotoPath TEXT,
-  createdAt TEXT
-)`;
+function generateOTP() {
+  return `OTP-${Math.floor(100000 + Math.random() * 900000)}`;
+}
 
-const createPollTable = `CREATE TABLE IF NOT EXISTS polls (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  eventName TEXT NOT NULL,
-  songName TEXT NOT NULL,
-  songPath TEXT NOT NULL,
-  votes INTEGER DEFAULT 0
-)`;
-
-const createPostsTable = `CREATE TABLE IF NOT EXISTS posts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  artistID TEXT NOT NULL,
-  content TEXT,
-  media BLOB,
-  mediaType TEXT,
-  createdAt TEXT DEFAULT (datetime('now'))
-)`;
-
-const createCommentsTable = `CREATE TABLE IF NOT EXISTS comments (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  postID INTEGER NOT NULL,
-  artistID TEXT NOT NULL,
-  comment TEXT NOT NULL,
-  createdAt TEXT DEFAULT (datetime('now')),
-  FOREIGN KEY(postID) REFERENCES posts(id)
-)`;
-
-const createLikesTable = `CREATE TABLE IF NOT EXISTS likes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  postID INTEGER NOT NULL,
-  artistID TEXT NOT NULL,
-  createdAt TEXT DEFAULT (datetime('now')),
-  FOREIGN KEY(postID) REFERENCES posts(id)
-)`;
-
-db.serialize(() => {
-  db.run(createUserTable);
-  db.run(createPollTable);
-  db.run(createPostsTable);
-  db.run(createCommentsTable);
-  db.run(createLikesTable);
-});
+function generateArtistID() {
+  return Math.floor(10000000 + Math.random() * 90000000).toString();
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -102,13 +54,7 @@ app.use('/static', express.static(path.join(__dirname, 'public/static')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/logo.png', express.static(path.join(__dirname, 'public/static/logo.png')));
 
-function generateOTP() {
-  return `OTP-${Math.floor(100000 + Math.random() * 900000)}`;
-}
-
-function generateArtistID() {
-  return Math.floor(10000000 + Math.random() * 90000000).toString();
-}
+// ROUTES
 
 app.get('/', (req, res) => {
   if (req.session.artistID) {
@@ -135,31 +81,37 @@ app.get('/profile', (req, res) => {
 });
 
 // API: Get logged-in user's profile data
-app.get('/api/profile', (req, res) => {
+app.get('/api/profile', async (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-  db.get('SELECT artistName, profilePhotoPath, bio, musicType FROM users WHERE artistID = ?', [req.session.artistID], (err, user) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
-  });
+  try {
+    const doc = await db.collection('users').doc(req.session.artistID).get();
+    if (!doc.exists) return res.status(404).json({ error: 'User not found' });
+    const user = doc.data();
+    res.json({
+      artistName: user.artistName,
+      profilePhotoPath: user.profilePhotoPath,
+      bio: user.bio,
+      musicType: user.musicType,
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // API: Login
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { artistID, password } = req.body;
   if (!artistID) return res.status(400).json({ error: 'Missing artistID' });
 
-  db.get('SELECT * FROM users WHERE artistID = ?', [artistID], async (err, user) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    if (!user) return res.status(401).json({ error: 'Invalid artistID' });
+  try {
+    const doc = await db.collection('users').doc(artistID).get();
+    if (!doc.exists) return res.status(401).json({ error: 'Invalid artistID' });
 
+    const user = doc.data();
     if (!password || password.trim() === '') {
       const newOTP = generateOTP();
-      db.run('UPDATE users SET password = ? WHERE artistID = ?', [newOTP, artistID], (err) => {
-        if (err) return res.status(500).json({ error: 'Failed to generate OTP' });
-        return res.json({ otp: newOTP.slice(4), message: 'OTP generated. Use this to login and reset your password.' });
-      });
-      return;
+      await db.collection('users').doc(artistID).update({ password: newOTP });
+      return res.json({ otp: newOTP.slice(4), message: 'OTP generated. Use this to login and reset your password.' });
     }
 
     if (user.password.startsWith('OTP-')) {
@@ -173,7 +125,9 @@ app.post('/api/login', (req, res) => {
     req.session.artistID = artistID;
     req.session.userRole = user.role;
     res.json({ role: user.role });
-  });
+  } catch (e) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // API: Reset password
@@ -181,20 +135,21 @@ app.post('/api/reset-password', async (req, res) => {
   const { artistID, newPassword } = req.body;
   if (!artistID || !newPassword || newPassword.length < 4) return res.status(400).json({ error: 'Invalid input' });
 
-  db.get('SELECT * FROM users WHERE artistID = ?', [artistID], async (err, user) => {
-    if (err) return res.status(500).json({ error: 'DB error' });
-    if (!user) return res.status(404).json({ error: 'User not found' });
+  try {
+    const doc = await db.collection('users').doc(artistID).get();
+    if (!doc.exists) return res.status(404).json({ error: 'User not found' });
+    const user = doc.data();
     if (!user.password.startsWith('OTP-')) return res.status(400).json({ error: 'Password reset not allowed' });
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    db.run('UPDATE users SET password = ? WHERE artistID = ?', [hashed, artistID], (err) => {
-      if (err) return res.status(500).json({ error: 'DB error on update' });
-      res.json({ message: 'Password updated successfully' });
-    });
-  });
+    await db.collection('users').doc(artistID).update({ password: hashed });
+    res.json({ message: 'Password updated successfully' });
+  } catch (e) {
+    res.status(500).json({ error: 'DB error on update' });
+  }
 });
 
-// API: Create account with profile photo upload (saved on disk)
+// API: Create account with profile photo upload
 app.post('/api/create-account', profilePhotoUpload.single('profilePhoto'), async (req, res) => {
   try {
     const { artistName, email, role, bio = '', musicType, password } = req.body;
@@ -204,23 +159,30 @@ app.post('/api/create-account', profilePhotoUpload.single('profilePhoto'), async
     }
 
     const artistID = generateArtistID();
-    db.get('SELECT * FROM users WHERE artistID = ? OR email = ?', [artistID, email], async (err, existingUser) => {
-      if (err || existingUser) {
-        if (req.file) fs.unlinkSync(req.file.path);
-        return res.status(500).json({ error: 'Validation or user exists' });
-      }
+    const userDoc = await db.collection('users').doc(artistID).get();
+    const emailQuery = await db.collection('users').where('email', '==', email).get();
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const profilePhotoPath = req.file ? `/uploads/${req.file.filename}` : '/static/default-profile.png';
-      db.run(
-        `INSERT INTO users (artistID, artistName, email, password, role, bio, musicType, profilePhotoPath, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-        [artistID, artistName, email, hashedPassword, role, bio, musicType, profilePhotoPath],
-        (err) => {
-          if (err) return res.status(500).json({ error: 'Database insert error' });
-          res.json({ message: 'Account created successfully', artistID });
-        });
+    if (userDoc.exists || !emailQuery.empty) {
+      if (req.file) fs.unlinkSync(req.file.path);
+      return res.status(500).json({ error: 'User exists or invalid' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const profilePhotoPath = req.file ? `/uploads/${req.file.filename}` : '/static/default-profile.png';
+
+    await db.collection('users').doc(artistID).set({
+      artistID,
+      artistName,
+      email,
+      password: hashedPassword,
+      role,
+      bio,
+      musicType,
+      profilePhotoPath,
+      createdAt: new Date().toISOString(),
     });
+
+    res.json({ message: 'Account created successfully', artistID });
   } catch (error) {
     if (req.file) fs.unlinkSync(req.file.path);
     res.status(500).json({ error: 'Server error occurred' });
@@ -238,224 +200,262 @@ app.get('/event', (req, res) => {
 });
 
 // Poll endpoints
-app.get('/api/polls', (req, res) => {
-  db.all('SELECT * FROM polls', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'DB error' });
-    res.json(rows);
-  });
+app.get('/api/polls', async (req, res) => {
+  try {
+    const snapshot = await db.collection('polls').get();
+    const polls = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json(polls);
+  } catch {
+    res.status(500).json({ error: 'DB error' });
+  }
 });
 
 // ADMIN ONLY: Create polls/events
-app.post('/api/polls', (req, res, next) => {
-  if (req.session.userRole !== 'admin') {
-    return res.status(403).json({ error: 'Only admins can create polls/events' });
-  }
+app.post('/api/polls', async (req, res, next) => {
+  if (req.session.userRole !== 'admin') return res.status(403).json({ error: 'Only admins can create polls/events' });
   next();
-}, multer({ dest: 'uploads/' }).array('songs'), (req, res) => {
-  const { eventName } = req.body;
-  const files = req.files;
-  const names = req.body.names ? JSON.parse(req.body.names) : [];
+}, multer({ dest: 'uploads/' }).array('songs'), async (req, res) => {
+  try {
+    const { eventName } = req.body;
+    const files = req.files;
+    const names = req.body.names ? JSON.parse(req.body.names) : [];
 
-  if (!eventName || !files || !names || files.length !== names.length) {
-    return res.status(400).json({ error: 'Missing or mismatched poll data' });
+    if (!eventName || !files || !names || files.length !== names.length) {
+      return res.status(400).json({ error: 'Missing or mismatched poll data' });
+    }
+
+    const batch = db.batch();
+    files.forEach((file, i) => {
+      const pollRef = db.collection('polls').doc();
+      batch.set(pollRef, {
+        eventName,
+        songName: names[i],
+        songPath: `/uploads/${file.filename}`,
+        votes: 0,
+      });
+    });
+    await batch.commit();
+
+    res.json({ message: 'Poll created' });
+  } catch {
+    res.status(500).json({ error: 'DB error on poll creation' });
   }
-
-  const stmt = db.prepare('INSERT INTO polls (eventName, songName, songPath) VALUES (?, ?, ?)');
-  files.forEach((file, i) => {
-    stmt.run(eventName, names[i], `/uploads/${file.filename}`);
-  });
-  stmt.finalize();
-
-  res.json({ message: 'Poll created' });
 });
 
 // ADMIN ONLY: Delete polls/events
-app.delete('/api/polls/:id', (req, res, next) => {
-  if (req.session.userRole !== 'admin') {
-    return res.status(403).json({ error: 'Only admins can delete polls/events' });
-  }
-  next();
-});
-
-app.delete('/api/polls/:id', (req, res) => {
+app.delete('/api/polls/:id', async (req, res) => {
+  if (req.session.userRole !== 'admin') return res.status(403).json({ error: 'Only admins can delete polls/events' });
   const pollId = req.params.id;
-  db.run('DELETE FROM polls WHERE id = ?', [pollId], function(err) {
-    if (err) return res.status(500).json({ error: 'Failed to delete poll/event' });
-    if (this.changes === 0) return res.status(404).json({ error: 'Poll/event not found' });
+  try {
+    const pollRef = db.collection('polls').doc(pollId);
+    await pollRef.delete();
     res.json({ message: 'Poll/event deleted successfully' });
-  });
+  } catch {
+    res.status(500).json({ error: 'Failed to delete poll/event' });
+  }
 });
 
 // USERS CAN VOTE, ADMINS CAN'T
-app.post('/api/vote', (req, res, next) => {
-  if (req.session.userRole === 'admin') {
-    return res.status(403).json({ error: 'Admins cannot vote' });
-  }
+app.post('/api/vote', async (req, res, next) => {
+  if (req.session.userRole === 'admin') return res.status(403).json({ error: 'Admins cannot vote' });
   next();
-}, (req, res) => {
+}, async (req, res) => {
   const { pollId } = req.body;
   if (!pollId) return res.status(400).json({ error: 'Missing poll ID' });
-  db.run('UPDATE polls SET votes = votes + 1 WHERE id = ?', [pollId], (err) => {
-    if (err) return res.status(500).json({ error: 'Vote failed' });
+  try {
+    const pollRef = db.collection('polls').doc(pollId);
+    await db.runTransaction(async (t) => {
+      const doc = await t.get(pollRef);
+      if (!doc.exists) throw 'Poll not found';
+      const newVotes = (doc.data().votes || 0) + 1;
+      t.update(pollRef, { votes: newVotes });
+    });
     res.json({ message: 'Vote counted' });
-  });
+  } catch {
+    res.status(500).json({ error: 'Vote failed' });
+  }
 });
 
-// Create a post with optional media (stored as BLOB)
-app.post('/api/post', postUpload.single('media'), (req, res) => {
+// Create a post with optional media (stored as base64 string)
+app.post('/api/post', postUpload.single('media'), async (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
 
   const content = req.body.content || '';
-  let mediaBuffer = null;
+  let mediaData = null;
   let mediaType = null;
 
   if (req.file) {
-    mediaBuffer = req.file.buffer;
+    mediaData = req.file.buffer.toString('base64');
     mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
   }
 
-  db.run(
-    `INSERT INTO posts (artistID, content, media, mediaType, createdAt) VALUES (?, ?, ?, ?, datetime('now'))`,
-    [req.session.artistID, content, mediaBuffer, mediaType],
-    function (err) {
-      if (err) return res.status(500).json({ error: 'Failed to create post' });
-      res.json({ message: 'Post created', postId: this.lastID });
-    }
-  );
+  try {
+    const postRef = await db.collection('posts').add({
+      artistID: req.session.artistID,
+      content,
+      media: mediaData,
+      mediaType,
+      createdAt: new Date().toISOString(),
+    });
+    res.json({ message: 'Post created', postId: postRef.id });
+  } catch {
+    res.status(500).json({ error: 'Failed to create post' });
+  }
 });
 
 // Get posts feed with likes and comments count and user info
-app.get('/api/posts', (req, res) => {
-  db.all(
-    `SELECT posts.*, users.artistName, users.profilePhotoPath,
-      (SELECT COUNT(*) FROM likes WHERE postID = posts.id) AS likeCount,
-      (SELECT COUNT(*) FROM comments WHERE postID = posts.id) AS commentCount
-    FROM posts
-    JOIN users ON posts.artistID = users.artistID
-    ORDER BY posts.createdAt DESC
-    LIMIT 50`,
-    [],
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Failed to fetch posts' });
-      const posts = rows.map(post => {
-        if (post.media) {
-          post.mediaUrl = `/api/post-media/${post.id}`;
-          delete post.media;
-        }
-        return post;
-      });
-      res.json(posts);
-    }
-  );
+app.get('/api/posts', async (req, res) => {
+  try {
+    const snapshot = await db.collection('posts')
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+
+    const posts = await Promise.all(snapshot.docs.map(async doc => {
+      const post = doc.data();
+      post.id = doc.id;
+
+      const userDoc = await db.collection('users').doc(post.artistID).get();
+      if (userDoc.exists) {
+        post.artistName = userDoc.data().artistName;
+        post.profilePhotoPath = userDoc.data().profilePhotoPath;
+      }
+
+      // Count likes
+      const likesSnap = await db.collection('likes').where('postID', '==', post.id).get();
+      post.likeCount = likesSnap.size;
+
+      // Count comments
+      const commentsSnap = await db.collection('comments').where('postID', '==', post.id).get();
+      post.commentCount = commentsSnap.size;
+
+      if (post.media) {
+        post.mediaUrl = `/api/post-media/${post.id}`;
+        delete post.media; // Don't send full base64 here
+      }
+
+      return post;
+    }));
+
+    res.json(posts);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch posts' });
+  }
 });
 
-// Serve media blob for a post by ID
-app.get('/api/post-media/:postId', (req, res) => {
+// Serve media for a post by ID
+app.get('/api/post-media/:postId', async (req, res) => {
   const postId = req.params.postId;
-  db.get('SELECT media, mediaType FROM posts WHERE id = ?', [postId], (err, row) => {
-    if (err || !row || !row.media) return res.status(404).send('Media not found');
-    const contentType = row.mediaType === 'image' ? 'image/*' : 'video/*';
+  try {
+    const doc = await db.collection('posts').doc(postId).get();
+    if (!doc.exists || !doc.data().media) return res.status(404).send('Media not found');
+    const post = doc.data();
+    const contentType = post.mediaType === 'image' ? 'image/*' : 'video/*';
+    const buffer = Buffer.from(post.media, 'base64');
     res.set('Content-Type', contentType);
-    res.send(row.media);
-  });
+    res.send(buffer);
+  } catch {
+    res.status(404).send('Media not found');
+  }
 });
 
 // Like/unlike toggle endpoint
-app.post('/api/like', (req, res) => {
+app.post('/api/like', async (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
   const { postID } = req.body;
   if (!postID) return res.status(400).json({ error: 'Missing postID' });
 
-  db.get('SELECT * FROM likes WHERE postID = ? AND artistID = ?', [postID, req.session.artistID], (err, row) => {
-    if (err) return res.status(500).json({ error: 'DB error' });
+  try {
+    const likeQuery = await db.collection('likes')
+      .where('postID', '==', postID)
+      .where('artistID', '==', req.session.artistID)
+      .limit(1)
+      .get();
 
-    if (row) {
+    if (!likeQuery.empty) {
       // Unlike
-      db.run('DELETE FROM likes WHERE id = ?', [row.id], (err) => {
-        if (err) return res.status(500).json({ error: 'Failed to unlike' });
-        res.json({ message: 'Unliked' });
-      });
+      await db.collection('likes').doc(likeQuery.docs[0].id).delete();
+      return res.json({ message: 'Unliked' });
     } else {
       // Like
-      db.run('INSERT INTO likes (postID, artistID, createdAt) VALUES (?, ?, datetime(\'now\'))', [postID, req.session.artistID], (err) => {
-        if (err) return res.status(500).json({ error: 'Failed to like' });
-        res.json({ message: 'Liked' });
+      await db.collection('likes').add({
+        postID,
+        artistID: req.session.artistID,
+        createdAt: new Date().toISOString(),
       });
+      return res.json({ message: 'Liked' });
     }
-  });
+  } catch {
+    res.status(500).json({ error: 'DB error' });
+  }
 });
 
 // Comment on post endpoint
-app.post('/api/comment', (req, res) => {
+app.post('/api/comment', async (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
   const { postID, comment } = req.body;
   if (!postID || !comment) return res.status(400).json({ error: 'Missing postID or comment' });
 
-  db.run(
-    'INSERT INTO comments (postID, artistID, comment, createdAt) VALUES (?, ?, ?, datetime(\'now\'))',
-    [postID, req.session.artistID, comment],
-    function (err) {
-      if (err) return res.status(500).json({ error: 'Failed to add comment' });
-      res.json({ message: 'Comment added', commentId: this.lastID });
-    }
-  );
+  try {
+    const commentRef = await db.collection('comments').add({
+      postID,
+      artistID: req.session.artistID,
+      comment,
+      createdAt: new Date().toISOString(),
+    });
+    res.json({ message: 'Comment added', commentId: commentRef.id });
+  } catch {
+    res.status(500).json({ error: 'Failed to add comment' });
+  }
 });
 
 // Get comments for a post
-app.get('/api/comments/:postID', (req, res) => {
+app.get('/api/comments/:postID', async (req, res) => {
   const postID = req.params.postID;
-  db.all(
-    `SELECT comments.*, users.artistName, users.profilePhotoPath
-    FROM comments
-    JOIN users ON comments.artistID = users.artistID
-    WHERE postID = ?
-    ORDER BY comments.createdAt ASC`,
-    [postID],
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Failed to fetch comments' });
-      res.json(rows);
-    }
-  );
+  try {
+    const snapshot = await db.collection('comments')
+      .where('postID', '==', postID)
+      .orderBy('createdAt', 'asc')
+      .get();
+
+    const comments = await Promise.all(snapshot.docs.map(async doc => {
+      const comment = doc.data();
+      comment.id = doc.id;
+
+      const userDoc = await db.collection('users').doc(comment.artistID).get();
+      if (userDoc.exists) {
+        comment.artistName = userDoc.data().artistName;
+        comment.profilePhotoPath = userDoc.data().profilePhotoPath;
+      }
+
+      return comment;
+    }));
+
+    res.json(comments);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch comments' });
+  }
 });
 
 // API: Get logged-in user info
-app.get('/api/user', (req, res) => {
+app.get('/api/user', async (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-  db.get('SELECT artistID, artistName, email, role FROM users WHERE artistID = ?', [req.session.artistID], (err, user) => {
-    if (err) return res.status(500).json({ error: 'DB error' });
-    res.json(user);
-  });
+  try {
+    const doc = await db.collection('users').doc(req.session.artistID).get();
+    if (!doc.exists) return res.status(404).json({ error: 'User not found' });
+    const user = doc.data();
+    res.json({
+      artistID: user.artistID,
+      artistName: user.artistName,
+      email: user.email,
+      role: user.role,
+    });
+  } catch {
+    res.status(500).json({ error: 'DB error' });
+  }
 });
 
-// --- JSON dump to file every 5 minutes ---
-const tables = ['users', 'polls', 'posts', 'comments', 'likes'];
-
-async function dumpDbToJson() {
-  const data = {};
-  for (const table of tables) {
-    data[table] = await new Promise((resolve, reject) => {
-      db.all(`SELECT * FROM ${table}`, (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows);
-      });
-    });
-  }
-  fs.writeFileSync('LNPL.json', JSON.stringify(data, null, 2));
-  console.log(`[${new Date().toISOString()}] 🔥 DB dumped to LNPL.json`);
-}
-
-// Initial dump on server start
-dumpDbToJson().catch(console.error);
-
-// Dump every 5 minutes
-setInterval(() => {
-  dumpDbToJson().catch(err => {
-    console.error('Error dumping DB:', err);
-  });
-}, 300000); // 5 minutes
-
-// Server listening
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
