@@ -206,6 +206,11 @@
     .btn-post:hover {
       background: #0a7fff;
     }
+
+    /* Alert modal */
+    #alert-modal.hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -237,12 +242,46 @@
       <textarea id="post-text" placeholder="What's on your mind?"></textarea>
       <label for="file-upload" style="margin-top:10px; display:block; cursor:pointer; color:#06f; font-weight:bold; border:2px dashed #06f; border-radius:8px; padding:10px; text-align:center;">Upload File</label>
       <input type="file" id="file-upload" style="display:none;" />
-
-    <div id="file-preview" style="margin-top:10px; color:#eee; max-height:150px; overflow:auto;"></div>
+      <div id="file-preview" style="margin-top:10px; color:#eee; max-height:150px; overflow:auto;"></div>
       <div class="modal-actions">
         <button class="btn btn-cancel" id="cancel-post">Cancel</button>
         <button class="btn btn-post" id="submit-post">Post</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Custom Alert Modal -->
+  <div id="alert-modal" class="hidden" style="
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4000;
+  ">
+    <div style="
+      background: #111;
+      border: 1px solid #06f;
+      border-radius: 12px;
+      padding: 20px 30px;
+      box-shadow: 0 0 15px #06f;
+      max-width: 300px;
+      color: #06f;
+      font-weight: bold;
+      text-align: center;
+      user-select: none;
+    ">
+      <div id="alert-text" style="margin-bottom: 20px;"></div>
+      <button id="alert-ok" style="
+        background: #06f;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        padding: 8px 20px;
+        font-weight: bold;
+        cursor: pointer;
+      ">OK</button>
     </div>
   </div>
 
