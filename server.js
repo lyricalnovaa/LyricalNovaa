@@ -427,6 +427,33 @@ app.get('/api/user', (req, res) => {
   });
 });
 
+// --- JSON dump to file every 5 minutes ---
+const tables = ['users', 'polls', 'posts', 'comments', 'likes'];
+
+async function dumpDbToJson() {
+  const data = {};
+  for (const table of tables) {
+    data[table] = await new Promise((resolve, reject) => {
+      db.all(`SELECT * FROM ${table}`, (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows);
+      });
+    });
+  }
+  fs.writeFileSync('LNPL.json', JSON.stringify(data, null, 2));
+  console.log(`[${new Date().toISOString()}] 🔥 DB dumped to LNPL.json`);
+}
+
+// Initial dump on server start
+dumpDbToJson().catch(console.error);
+
+// Dump every 5 minutes
+setInterval(() => {
+  dumpDbToJson().catch(err => {
+    console.error('Error dumping DB:', err);
+  });
+}, 300000); // 5 minutes
+
 // Server listening
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
