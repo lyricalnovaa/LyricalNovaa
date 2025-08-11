@@ -36,9 +36,8 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // =========================
-  //  Create Post Modal Logic
+  // Create Post Modal Logic
   // =========================
-
   const createPostBtn = document.getElementById("add-post-btn");
   const postModal = document.getElementById("create-post-modal");
   const cancelPostBtn = document.getElementById("cancel-post");
@@ -49,11 +48,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const filePreview = document.getElementById("file-preview");
   let uploadedFile = null;
 
-  // Fetch logged-in user
   fetch("/api/current-user")
     .then(res => res.json())
     .then(data => {
-      if (data && data.artistID) {
+      if (data?.artistID) {
         loggedInUserEl.textContent = "@" + data.artistID;
       }
     })
@@ -61,20 +59,17 @@ document.addEventListener("DOMContentLoaded", () => {
       loggedInUserEl.textContent = "@unknown";
     });
 
-  // Open modal
   createPostBtn.onclick = () => {
     postModal.style.display = "flex";
     postTextArea.focus();
   };
 
-  // Close modal
   cancelPostBtn.onclick = () => {
     postModal.style.display = "none";
     postTextArea.value = "";
     clearFilePreview();
   };
 
-  // File upload preview
   fileUploadInput.addEventListener("change", () => {
     const file = fileUploadInput.files[0];
     uploadedFile = file || null;
@@ -82,30 +77,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!file) return;
 
-    const fileType = file.type;
     const reader = new FileReader();
-
-    if (fileType.startsWith("image/")) {
+    if (file.type.startsWith("image/")) {
       reader.onload = e => {
         const img = document.createElement("img");
         img.src = e.target.result;
         filePreview.appendChild(img);
       };
-      reader.readAsDataURL(file);
-    } else if (fileType.startsWith("video/")) {
+    } else if (file.type.startsWith("video/")) {
       reader.onload = e => {
         const video = document.createElement("video");
         video.src = e.target.result;
         video.controls = true;
         filePreview.appendChild(video);
       };
-      reader.readAsDataURL(file);
     } else {
-      // Show file name and size for other types
       const info = document.createElement("p");
       info.textContent = `File: ${file.name} (${Math.round(file.size / 1024)} KB)`;
       filePreview.appendChild(info);
     }
+    reader.readAsDataURL(file);
   });
 
   function clearFilePreview() {
@@ -114,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
     fileUploadInput.value = "";
   }
 
-  // Submit post modal (with optional file upload)
   submitPostBtn.onclick = async () => {
     const content = postTextArea.value.trim();
     if (!content && !uploadedFile) {
@@ -127,13 +117,11 @@ document.addEventListener("DOMContentLoaded", () => {
       let headers;
 
       if (uploadedFile) {
-        // Use FormData if there's a file
         body = new FormData();
         body.append("content", content);
         body.append("file", uploadedFile);
-        headers = {}; // browser sets multipart/form-data automatically
+        headers = {};
       } else {
-        // JSON only if no file
         body = JSON.stringify({ content });
         headers = { "Content-Type": "application/json" };
       }
@@ -149,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
           postModal.style.display = "none";
           postTextArea.value = "";
           clearFilePreview();
-          loadFeed(); // Reload feed ONLY for current user after posting
+          loadFeed();
         });
       } else {
         showAlert("Failed to post.");
@@ -160,39 +148,34 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // =========================
-  // 🚀 ADDITION: Inline Post Box Logic (Facebook-style)
+  // Inline Post Box Logic
   // =========================
-
   const postInput = document.getElementById("post-input");
   const submitPostBtnInline = document.getElementById("submit-post-inline");
   const loggedInUserInline = document.getElementById("logged-in-user-inline");
 
-  // Fetch logged-in user for inline post box username display
   fetch("/api/current-user")
     .then(res => res.json())
     .then(data => {
-      if (data && data.artistID) {
-        if (loggedInUserInline) loggedInUserInline.textContent = "@" + data.artistID;
+      if (data?.artistID && loggedInUserInline) {
+        loggedInUserInline.textContent = "@" + data.artistID;
       }
     })
     .catch(() => {
       if (loggedInUserInline) loggedInUserInline.textContent = "@unknown";
     });
 
-  // Disable submit button initially
   if (submitPostBtnInline) submitPostBtnInline.disabled = true;
 
-  // Enable/disable inline submit button based on textarea content
   if (postInput && submitPostBtnInline) {
     postInput.addEventListener("input", () => {
       submitPostBtnInline.disabled = postInput.value.trim() === "";
     });
 
-    // Submit post from inline box
     submitPostBtnInline.addEventListener("click", async () => {
       const content = postInput.value.trim();
       if (!content) {
-        alert("Post content cannot be empty."); // fallback alert
+        alert("Post content cannot be empty.");
         return;
       }
 
@@ -207,44 +190,44 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("Post created!");
           postInput.value = "";
           submitPostBtnInline.disabled = true;
-          loadFeed(); // Reload feed ONLY for current user after posting
+          loadFeed();
         } else {
           alert("Failed to post.");
         }
-      } catch (err) {
+      } catch {
         alert("Server error on post.");
       }
     });
   }
 
   // =========================
-  // Feed loading and rendering
+  // Feed loading
   // =========================
-
-  const feedContainer = document.getElementById('feed');
+  const feedContainer = document.getElementById("feed");
 
   async function loadFeed() {
-    if (!feedContainer) return; // no feed container? bail
+    if (!feedContainer) return;
 
     try {
-      const res = await fetch('/api/posts');
-      if (!res.ok) throw new Error('Failed to fetch posts');
+      const res = await fetch("/api/posts");
+      if (!res.ok) throw new Error("Failed to fetch posts");
       const posts = await res.json();
 
-      feedContainer.innerHTML = ''; // clear current feed
+      feedContainer.innerHTML = "";
 
       posts.forEach(post => {
-        const postEl = document.createElement('div');
-        postEl.className = 'post';
+        const postEl = document.createElement("div");
+        postEl.className = "post";
 
-        // Media preview HTML logic
-        let mediaHTML = '';
-        if (post.mediaType === 'image') {
-          mediaHTML = `<img src="/api/post-media/${post.id}" alt="Post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />`;
-        } else if (post.mediaType === 'video') {
-          mediaHTML = `<video controls style="max-width:100%; border-radius:8px; margin-top:8px;">
-                         <source src="/api/post-media/${post.id}" type="video/mp4" />
-                       </video>`;
+        let mediaHTML = "";
+        if (post.mediaPath) {
+          if (post.mediaType === "image") {
+            mediaHTML = `<img src="${post.mediaPath}" alt="Post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />`;
+          } else if (post.mediaType === "video") {
+            mediaHTML = `<video controls style="max-width:100%; border-radius:8px; margin-top:8px;">
+                           <source src="${post.mediaPath}" type="video/mp4" />
+                         </video>`;
+          }
         }
 
         postEl.innerHTML = `
@@ -258,16 +241,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         feedContainer.appendChild(postEl);
       });
-    } catch (err) {
-      feedContainer.textContent = 'Failed to load feed.';
+    } catch {
+      feedContainer.textContent = "Failed to load feed.";
     }
   }
 
-  // Fix logged-in user display (use artistID instead of username)
   fetch("/api/current-user")
     .then(res => res.json())
     .then(data => {
-      if (data && data.artistID) {
+      if (data?.artistID) {
         const loggedInUserEl = document.getElementById("logged-in-user");
         if (loggedInUserEl) loggedInUserEl.textContent = "@" + data.artistID;
       }
@@ -277,6 +259,5 @@ document.addEventListener("DOMContentLoaded", () => {
       if (loggedInUserEl) loggedInUserEl.textContent = "@unknown";
     });
 
-  // Load feed on page load
   loadFeed();
 });
