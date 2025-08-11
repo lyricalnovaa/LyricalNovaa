@@ -538,39 +538,47 @@ async function periodicSync() {
   }
 }
 app.put('/api/profile', async (req, res) => {
-  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-
   const { profilePicPath, bio, musicType } = req.body;
+  const userId = req.session?.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
 
   try {
-    // Update Firebase Firestore
-    const userRef = db.collection('users').doc(req.session.artistID);
-    await userRef.update({
-      profilePhotoPath: profilePicPath,
-      bio,
-      musicType,
-    });
-
-    // Update SQLite DB
-    sqliteDB.run(
-      `UPDATE users SET profilePhotoPath = ?, bio = ?, musicType = ? WHERE artistID = ?`,
-      [profilePicPath, bio, musicType, req.session.artistID],
-      function(err) {
+    // 1. Update SQLite
+    db.run(
+      `UPDATE users SET profilePhotoPath = ?, bio = ?, musicType = ? WHERE id = ?`,
+      [profilePicPath, bio, musicType, userId],
+      async function (err) {
         if (err) {
           console.error('SQLite update error:', err);
-          return res.status(500).json({ error: 'Failed to update SQLite DB' });
+          return res.status(500).json({ error: 'Failed to update SQL' });
         }
-        // Success response after both updates
-        res.json({ message: 'Profile updated successfully' });
+
+        try {
+          // 2. Update Firestore
+          const userRef = admin.firestore().collection('users').doc(String(userId));
+          await userRef.set(
+            { profilePhotoPath: profilePicPath, bio, musicType },
+            { merge: true }
+          );
+
+          res.json({ success: true });
+        } catch (firestoreErr) {
+          console.error('Firestore update error:', firestoreErr);
+          res.json({
+            success: true,
+            firestoreError: 'Firestore update failed',
+          });
+        }
       }
     );
-
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    res.status(500).json({ error: 'Failed to update profile' });
+  } catch (e) {
+    console.error('Profile update route error:', e);
+    res.status(500).json({ error: 'Server error' });
   }
 });
-
 // Run first sync on server start
 periodicSync();
 
