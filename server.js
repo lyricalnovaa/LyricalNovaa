@@ -94,6 +94,7 @@ app.get('/api/profile', async (req, res) => {
       profilePhotoPath: user.profilePhotoPath,
       bio: user.bio,
       musicType: user.musicType,
+      role: user.role,
     });
   } catch (e) {
     res.status(500).json({ error: 'Database error' });
