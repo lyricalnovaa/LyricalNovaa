@@ -12,8 +12,10 @@ const app = express();
 const firebaseConfig = JSON.parse(Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString('utf8'));
 admin.initializeApp({
   credential: admin.credential.cert(firebaseConfig),
+  storageBucket: firebaseConfig.project_id + ".appspot.com" // <-- Make sure your bucket is correct
 });
 const db = admin.firestore();
+const bucket = admin.storage().bucket(); // Get default bucket
 
 // Multer configs
 const profilePhotoUpload = multer({
@@ -276,34 +278,49 @@ app.post('/api/vote', async (req, res, next) => {
   }
 });
 
-// Create a post with optional media (stored as base64 string)
+// ==== MODIFIED POST CREATION ROUTE TO UPLOAD MEDIA TO FIREBASE STORAGE ====
 app.post('/api/post', postUpload.single('media'), async (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
 
   const content = req.body.content || '';
-  let mediaData = null;
+  let mediaURL = null;
   let mediaType = null;
 
-  if (req.file) {
-    mediaData = req.file.buffer.toString('base64');
-    mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
-  }
-
   try {
-    const postRef = await db.collection('posts').add({
+    if (req.file) {
+      const fileName = `posts/${Date.now()}-${req.file.originalname}`;
+      const file = req.file;
+
+      // Upload buffer to Firebase Storage
+      const fileUpload = bucket.file(fileName);
+      await fileUpload.save(file.buffer, {
+        metadata: { contentType: file.mimetype },
+        public: true,
+      });
+
+      // Make the file public
+      await fileUpload.makePublic();
+
+      mediaURL = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+      mediaType = file.mimetype.startsWith('image/') ? 'image' : 'video';
+    }
+
+    const postDoc = await db.collection('posts').add({
       artistID: req.session.artistID,
       content,
-      media: mediaData,
+      mediaPath: mediaURL,
       mediaType,
       createdAt: new Date().toISOString(),
     });
-    res.json({ message: 'Post created', postId: postRef.id });
-  } catch {
+
+    res.json({ message: 'Post created', postId: postDoc.id });
+  } catch (error) {
+    console.error('Error uploading post media:', error);
     res.status(500).json({ error: 'Failed to create post' });
   }
 });
 
-// Get posts feed with likes and comments count and user info
+// ==== MODIFIED POSTS FETCH ROUTE TO PROVIDE MEDIA PATH DIRECTLY ====
 app.get('/api/posts', async (req, res) => {
   try {
     const snapshot = await db.collection('posts')
@@ -329,31 +346,28 @@ app.get('/api/posts', async (req, res) => {
       const commentsSnap = await db.collection('comments').where('postID', '==', post.id).get();
       post.commentCount = commentsSnap.size;
 
-      if (post.media) {
-        post.mediaUrl = `/api/post-media/${post.id}`;
-        delete post.media; // Don't send full base64 here
-      }
+      // MEDIA: use mediaPath directly (URL to Firebase Storage file)
+      post.mediaPath = post.mediaPath || null;
 
       return post;
     }));
 
     res.json(posts);
-  } catch {
+  } catch (error) {
+    console.error('Error fetching posts:', error);
     res.status(500).json({ error: 'Failed to fetch posts' });
   }
 });
 
-// Serve media for a post by ID
+// Serve media for a post by ID (optional, since media URLs are public now)
+// You can remove this route if you want, frontend loads media directly from Firebase URLs
 app.get('/api/post-media/:postId', async (req, res) => {
   const postId = req.params.postId;
   try {
     const doc = await db.collection('posts').doc(postId).get();
-    if (!doc.exists || !doc.data().media) return res.status(404).send('Media not found');
-    const post = doc.data();
-    const contentType = post.mediaType === 'image' ? 'image/*' : 'video/*';
-    const buffer = Buffer.from(post.media, 'base64');
-    res.set('Content-Type', contentType);
-    res.send(buffer);
+    if (!doc.exists || !doc.data().mediaPath) return res.status(404).send('Media not found');
+    // Redirect to the public Firebase Storage URL
+    res.redirect(doc.data().mediaPath);
   } catch {
     res.status(404).send('Media not found');
   }
@@ -455,7 +469,6 @@ app.get('/api/user', async (req, res) => {
   }
 });
 
-
 // ==========================
 // ADD THIS AT THE BOTTOM BELOW ALL YOUR EXISTING CODE
 // ==========================
@@ -529,9 +542,6 @@ periodicSync();
 
 // Set interval every 5 minutes (300,000 ms)
 setInterval(periodicSync, 300000);
-
-
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
