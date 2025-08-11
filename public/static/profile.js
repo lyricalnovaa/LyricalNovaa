@@ -101,10 +101,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Edit Profile modal open/close
   editProfileBtn?.addEventListener('click', () => {
     editProfileModal.classList.remove('hidden');
+    editProfileModal.style.display = "flex";
   });
 
   cancelEditBtn?.addEventListener('click', () => {
     editProfileModal.classList.add('hidden');
+    editProfileModal.style.display = "none";
   });
 
   // Handle form submit - you’ll wanna replace this with real API call
