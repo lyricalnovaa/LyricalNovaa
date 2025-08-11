@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Logout button handler
   logoutBtn?.addEventListener('click', async () => {
     try {
-      const res = await fetch('/api/logout', { method: 'POST' });
+      const res = await fetch('/api/logout', { method: 'POST', credentials: 'include' });
       if (res.ok) {
         showAlert('Logged out.', () => window.location.href = '/login');
       } else {
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Fetch and display profile info
   try {
-    const res = await fetch('/api/profile');
+    const res = await fetch('/api/profile', { credentials: 'include' });
     if (!res.ok) return showAlert('Failed to load profile.');
 
     const data = await res.json();
@@ -131,6 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // <-- added
         body: JSON.stringify({
           profilePhotoPath: updatedPic,
           bio: updatedBio,
@@ -147,6 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sqliteRes = await fetch('/api/profile/sqlite-update', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // <-- added
           body: JSON.stringify({
             profilePhotoPath: updatedPic,
             bio: updatedBio,
