@@ -171,7 +171,7 @@ app.post('/api/create-account', profilePhotoUpload.single('profilePhoto'), async
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const profilePhotoPath = req.file ? `/uploads/${req.file.filename}` : '/static/default-profile.png';
+    const profilePhotoPath = req.file ? `/uploads/${req.file.filename}` : '/static/default-pfp.png';
 
     await db.collection('users').doc(artistID).set({
       artistID,
