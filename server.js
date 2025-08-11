@@ -537,6 +537,39 @@ async function periodicSync() {
     console.error('Periodic sync error:', error);
   }
 }
+app.put('/api/profile', async (req, res) => {
+  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { profilePicPath, bio, musicType } = req.body;
+
+  try {
+    // Update Firebase Firestore
+    const userRef = db.collection('users').doc(req.session.artistID);
+    await userRef.update({
+      profilePhotoPath: profilePicPath,
+      bio,
+      musicType,
+    });
+
+    // Update SQLite DB
+    sqliteDB.run(
+      `UPDATE users SET profilePhotoPath = ?, bio = ?, musicType = ? WHERE artistID = ?`,
+      [profilePicPath, bio, musicType, req.session.artistID],
+      function(err) {
+        if (err) {
+          console.error('SQLite update error:', err);
+          return res.status(500).json({ error: 'Failed to update SQLite DB' });
+        }
+        // Success response after both updates
+        res.json({ message: 'Profile updated successfully' });
+      }
+    );
+
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
 
 // Run first sync on server start
 periodicSync();
