@@ -13,6 +13,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cancelEditBtn = document.getElementById('cancel-edit-profile');
   const editProfileForm = document.getElementById('edit-profile-form');
 
+  const profileRole = document.getElementById('profile-role');
+  const profileMusicType = document.getElementById('profile-music-type');
+  const profileBio = document.getElementById('profile-bio');
+
   // Mobile menu toggle
   menuBtn?.addEventListener('click', () => {
     menu?.classList.toggle('hidden');
@@ -48,21 +52,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const data = await res.json();
 
-    profileName.textContent = `@${data.artistName}`;
-    if (data.profilePicUrl) {
-      profilePic.src = data.profilePicUrl;
+    profileName.textContent = `@${data.artistName || 'Unknown'}`;
+    profileRole.textContent = data.role || 'No role set';
+    profileMusicType.textContent = data.musicType || 'No music type set';
+    profileBio.textContent = data.bio || 'No bio available';
+
+    if (data.profilePhotoPath) {
+      profilePic.src = data.profilePhotoPath;
+    } else {
+      profilePic.src = '/static/default-pfp.png';
     }
 
-    // Optionally, prefill modal inputs if data contains bio/tags/profilePicUrl
-    if (data.bio) {
-      document.getElementById('edit-bio').value = data.bio;
-    }
-    if (data.tags) {
-      document.getElementById('edit-tags').value = data.tags.join(', ');
-    }
-    if (data.profilePicUrl) {
-      document.getElementById('edit-profile-pic-url').value = data.profilePicUrl;
-    }
+    // Prefill modal inputs with existing data
+    document.getElementById('edit-bio').value = data.bio || '';
+    document.getElementById('edit-tags').value = data.musicType || '';
+    document.getElementById('edit-profile-pic-url').value = data.profilePhotoPath || '';
 
     renderPosts(data.posts);
   } catch (err) {
@@ -101,15 +105,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Edit Profile modal open/close
   editProfileBtn?.addEventListener('click', () => {
     editProfileModal.classList.remove('hidden');
-    editProfileModal.style.display = "flex";
+    editProfileModal.style.display = 'flex';
   });
 
   cancelEditBtn?.addEventListener('click', () => {
     editProfileModal.classList.add('hidden');
-    editProfileModal.style.display = "none";
+    editProfileModal.style.display = 'none';
   });
 
-  // Handle form submit - you’ll wanna replace this with real API call
+  // Handle form submit
   editProfileForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -121,8 +125,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       .filter(tag => tag)
       .slice(0, 5);
 
-    // Basic validation could go here if you want
-
     try {
       const res = await fetch('/api/profile', {
         method: 'PUT', // or POST depending on your backend
@@ -130,9 +132,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          profilePicUrl: updatedPic,
+          profilePicPath: updatedPic,
           bio: updatedBio,
-          tags: updatedTags,
+          musicType: updatedTags.join(', '),
         }),
       });
 
@@ -142,8 +144,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Update profile UI after save
       profilePic.src = updatedPic || '/static/default-pfp.png';
-      // Optionally update bio or tags in UI if you display them
+      profileBio.textContent = updatedBio || 'No bio available';
+      profileMusicType.textContent = updatedTags.join(', ') || 'No music type set';
+
       editProfileModal.classList.add('hidden');
+      editProfileModal.style.display = 'none';
       showAlert('Profile updated successfully.');
     } catch (err) {
       showAlert(err.message || 'Error updating profile.');
