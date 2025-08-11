@@ -127,12 +127,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       const res = await fetch('/api/profile', {
-        method: 'PUT', // or POST depending on your backend
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          profilePicPath: updatedPic,
+          profilePhotoPath: updatedPic,
           bio: updatedBio,
           musicType: updatedTags.join(', '),
         }),
@@ -142,7 +142,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error('Failed to save profile');
       }
 
-      // Update profile UI after save
+      // Update SQLite DB too
+      try {
+        const sqliteRes = await fetch('/api/profile/sqlite-update', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            profilePhotoPath: updatedPic,
+            bio: updatedBio,
+            musicType: updatedTags.join(', '),
+          }),
+        });
+        if (!sqliteRes.ok) console.warn('Failed to update SQLite DB');
+      } catch (err) {
+        console.warn('SQLite update error:', err);
+      }
+
+      // Update UI
       profilePic.src = updatedPic || '/static/default-pfp.png';
       profileBio.textContent = updatedBio || 'No bio available';
       profileMusicType.textContent = updatedTags.join(', ') || 'No music type set';
