@@ -58,6 +58,30 @@ app.use('/logo.png', express.static(path.join(__dirname, 'public/static/logo.png
 
 // ROUTES
 
+app.post('/api/generate-otp', async (req, res) => {
+  try {
+    const otp = generateOTP(); // store return value
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userId' });
+    }
+
+    // Store OTP in Firebase
+    await db.collection('otps').doc(userId).set({
+      otp,
+      createdAt: new Date(),
+    });
+
+    res.json({ otp });
+  } catch (err) {
+    console.error('Error generating OTP:', err);
+    res.status(500).json({ error: 'Failed to generate OTP' });
+  }
+});
+
+
+
 app.get('/', (req, res) => {
   if (req.session.artistID) {
     if (req.session.userRole === 'admin') return res.redirect('/admin-dashboard');
