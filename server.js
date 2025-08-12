@@ -61,26 +61,36 @@ app.use('/logo.png', express.static(path.join(__dirname, 'public/static/logo.png
 app.post('/api/generate-otp', async (req, res) => {
   try {
     const otp = generateOTP();
-    const { artistID } = req.body;
+    const { artistId } = req.body;
 
-    if (!artistID) {
+    if (!artistId) {
       return res.status(400).json({ error: 'Missing artistId' });
     }
 
-    // Store OTP in Firebase
-    await db.collection('otps').doc(artistID).set({
-      otp,
-      createdAt: new Date(),
+    // Hash OTP just like a normal password
+    const hashedOTP = await bcrypt.hash(otp, 10);
+
+    // Get user doc
+    const userRef = db.collection('users').doc(artistId);
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Replace password hash with OTP hash + flag as OTP login
+    await userRef.update({
+      passwordHash: hashedOTP,
+      otpRequired: true,
+      otpIssuedAt: new Date(),
     });
 
-    res.json({ otp });
+    res.json({ otp }); // send OTP back to whoever called this endpoint
   } catch (err) {
     console.error('Error generating OTP:', err);
     res.status(500).json({ error: 'Failed to generate OTP' });
   }
 });
-
-
 
 app.get('/', (req, res) => {
   if (req.session.artistID) {
