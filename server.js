@@ -114,21 +114,41 @@ app.get('/profile', (req, res) => {
 });
 
 // API: Get logged-in user's profile data
-app.get('/api/profile', async (req, res) => {
-  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+app.put('/api/profile', async (req, res) => {
+  const { profilePhotoPath, bio, musicType } = req.body;
+  const artistID = req.session.artistID;
+
+  if (!artistID) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
   try {
-    const doc = await db.collection('users').doc(req.session.artistID).get();
-    if (!doc.exists) return res.status(404).json({ error: 'User not found' });
-    const user = doc.data();
-    res.json({
-      artistName: user.artistName,
-      profilePhotoPath: user.profilePhotoPath,
-      bio: user.bio,
-      musicType: user.musicType,
-      role: user.role,
+    // Update SQLite first
+    const sql = `UPDATE users SET profilePhotoPath = ?, bio = ?, musicType = ? WHERE artistID = ?`;
+    db.run(sql, [profilePhotoPath, bio, musicType, artistID], async function(err) {
+      if (err) {
+        console.error('SQLite update error:', err);
+        return res.status(500).json({ error: 'Failed to update SQL' });
+      }
+
+      try {
+        // Update Firestore with merge so no overwrite
+        const userRef = admin.firestore().collection('users').doc(artistID);
+        await userRef.set(
+          { profilePhotoPath, bio, musicType },
+          { merge: true }
+        );
+
+        res.json({ success: true });
+      } catch (firestoreErr) {
+        console.error('Firestore update error:', firestoreErr);
+        // We still respond success because SQLite worked
+        res.json({ success: true, firestoreError: 'Firestore update failed' });
+      }
     });
   } catch (e) {
-    res.status(500).json({ error: 'Database error' });
+    console.error('Profile update route error:', e);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
