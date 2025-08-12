@@ -269,6 +269,31 @@ app.get('/event', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'event.html'));
 });
 
+app.get('/api/profile', async (req, res) => {
+  const artistID = req.session.artistID;
+  if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
+
+  try {
+    const userDoc = await db.collection('users').doc(artistID).get();
+    if (!userDoc.exists) return res.status(404).json({ error: 'User not found' });
+
+    const userData = userDoc.data();
+    res.json({
+      artistID: userData.artistID,
+      artistName: userData.artistName,
+      profilePhotoPath: userData.profilePhotoPath,
+      bio: userData.bio,
+      musicType: userData.musicType,
+      email: userData.email,
+      role: userData.role,
+      // Add any other fields you want to send back here
+    });
+  } catch (err) {
+    console.error('Error fetching profile:', err);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
 // Poll endpoints
 app.get('/api/polls', async (req, res) => {
   try {
