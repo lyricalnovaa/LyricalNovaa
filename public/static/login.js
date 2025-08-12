@@ -49,8 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.otp) {
         showCustomAlert(`Your OTP is: <strong>${data.otp}</strong><br>Use this OTP as your password to login and reset your password.`);
       } else if (data.role) {
-        // Login success
-        window.location.href = data.role === 'admin' ? '/admin-dashboard' : '/home';
+        // If server signals reset password via role field (extra safety)
+        if (data.role === 'reset_password') {
+          localStorage.setItem('resetArtistID', artistID);
+          window.location.href = '/reset-password';
+        } else {
+          window.location.href = data.role === 'admin' ? '/admin-dashboard' : '/home';
+        }
       }
     } else {
       if (data.error === 'reset_password') {
