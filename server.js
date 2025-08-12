@@ -143,19 +143,26 @@ app.post('/api/login', async (req, res) => {
     if (!doc.exists) return res.status(401).json({ error: 'Invalid artistID' });
 
     const user = doc.data();
+
     if (!password || password.trim() === '') {
-      const newOTP = generateOTP();
-      await db.collection('users').doc(artistID).update({ password: newOTP });
-      return res.json({ otp: newOTP.slice(4), message: 'OTP generated. Use this to login and reset your password.' });
+      // generate OTP if no password sent
+      const newOTP = generateOTP().slice(4);
+      const hashedOTP = await bcrypt.hash(newOTP, 10);
+      await db.collection('users').doc(artistID).update({ password: 'OTP-' + hashedOTP });
+      return res.json({ otp: newOTP, message: 'OTP generated. Use this OTP as your password to login and reset your password.' });
     }
 
     if (user.password.startsWith('OTP-')) {
-      if (password === user.password.slice(4)) {
+      const hashedOTP = user.password.slice(4);
+      const matchOTP = await bcrypt.compare(password, hashedOTP);
+      if (matchOTP) {
+        // OTP matches — force password reset route
         return res.status(403).json({ error: 'reset_password', artistID });
       }
       return res.status(401).json({ error: 'Wrong OTP' });
     }
 
+    // Normal password login
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Wrong password' });
 
