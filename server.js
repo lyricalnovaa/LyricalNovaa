@@ -60,15 +60,15 @@ app.use('/logo.png', express.static(path.join(__dirname, 'public/static/logo.png
 
 app.post('/api/generate-otp', async (req, res) => {
   try {
-    const otp = generateOTP(); // store return value
-    const { userId } = req.session.artistID;
+    const otp = generateOTP();
+    const { artistID } = req.body;
 
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
+    if (!artistID) {
+      return res.status(400).json({ error: 'Missing artistId' });
     }
 
     // Store OTP in Firebase
-    await db.collection('otps').doc(userId).set({
+    await db.collection('otps').doc(artistID).set({
       otp,
       createdAt: new Date(),
     });
