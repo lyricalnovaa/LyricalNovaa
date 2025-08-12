@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Update SQLite DB too
       try {
-        const sqliteRes = await fetch('/api/profile/sqlite-update', {
+        const sqliteRes = await fetch('/api/profile', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include', // <-- added
