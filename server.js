@@ -150,7 +150,9 @@ app.post('/api/login', async (req, res) => {
     }
 
     if (user.password.startsWith('OTP-')) {
-      if (password === user.password.slice(4)) return res.status(403).json({ error: 'reset_password', artistID });
+      if (password === user.password.slice(4)) {
+        return res.status(403).json({ error: 'reset_password', artistID });
+      }
       return res.status(401).json({ error: 'Wrong OTP' });
     }
 
