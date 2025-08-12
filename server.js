@@ -115,25 +115,23 @@ app.get('/profile', (req, res) => {
 
 // API: Get logged-in user's profile data
 app.put('/api/profile', async (req, res) => {
-  const { profilePhotoPath, bio, musicType } = req.body;
-  const artistID = req.session.artistID;
+  const { profilePhotoPath, bio, musicType } = req.body;  // match frontend keys
+  const artistID = req.session.artistID;  // fix session lookup
 
   if (!artistID) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
   try {
-    // Update SQLite first
     const sql = `UPDATE users SET profilePhotoPath = ?, bio = ?, musicType = ? WHERE artistID = ?`;
-    db.run(sql, [profilePhotoPath, bio, musicType, artistID], async function(err) {
+    sqliteDB.run(sql, [profilePhotoPath, bio, musicType, artistID], async function (err) {
       if (err) {
         console.error('SQLite update error:', err);
         return res.status(500).json({ error: 'Failed to update SQL' });
       }
 
       try {
-        // Update Firestore with merge so no overwrite
-        const userRef = admin.firestore().collection('users').doc(artistID);
+        const userRef = db.collection('users').doc(artistID);
         await userRef.set(
           { profilePhotoPath, bio, musicType },
           { merge: true }
@@ -142,7 +140,6 @@ app.put('/api/profile', async (req, res) => {
         res.json({ success: true });
       } catch (firestoreErr) {
         console.error('Firestore update error:', firestoreErr);
-        // We still respond success because SQLite worked
         res.json({ success: true, firestoreError: 'Firestore update failed' });
       }
     });
