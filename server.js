@@ -61,17 +61,17 @@ app.use('/logo.png', express.static(path.join(__dirname, 'public/static/logo.png
 app.post('/api/generate-otp', async (req, res) => {
   try {
     const otp = generateOTP();
-    const { artistId } = req.body;
+    const { artistID } = req.body;
 
-    if (!artistId) {
-      return res.status(400).json({ error: 'Missing artistId' });
+    if (!artistID) {
+      return res.status(400).json({ error: 'Missing artistID' });
     }
 
     // Hash OTP just like a normal password
     const hashedOTP = await bcrypt.hash(otp, 10);
 
     // Get user doc
-    const userRef = db.collection('users').doc(artistId);
+    const userRef = db.collection('users').doc(artistID);
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
