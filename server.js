@@ -115,38 +115,49 @@ app.get('/profile', (req, res) => {
 
 // API: Get logged-in user's profile data
 app.put('/api/profile', async (req, res) => {
-  const { profilePhotoPath, bio, musicType } = req.body;  // match frontend keys
-  const artistID = req.session.artistID;  // fix session lookup
+  const { profilePhotoPath, bio, musicType } = req.body;
+  const artistID = req.session.artistID;
 
   if (!artistID) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  try {
+  // First, check if user exists in SQLite
+  sqliteDB.get('SELECT * FROM users WHERE artistID = ?', [artistID], (err, row) => {
+    if (err) {
+      console.error('SQLite SELECT error:', err.message);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!row) {
+      console.warn('User not found in SQLite with artistID:', artistID);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // User exists, update SQLite
     const sql = `UPDATE users SET profilePhotoPath = ?, bio = ?, musicType = ? WHERE artistID = ?`;
-    sqliteDB.run(sql, [profilePhotoPath, bio, musicType, artistID], async function (err) {
-      if (err) {
-        console.error('SQLite update error:', err);
-        return res.status(500).json({ error: 'Failed to update SQL' });
+    sqliteDB.run(sql, [profilePhotoPath, bio, musicType, artistID], function(updateErr) {
+      if (updateErr) {
+        console.error('SQLite UPDATE error:', updateErr.message);
+        return res.status(500).json({ error: 'Failed to update SQLite' });
+      }
+      if (this.changes === 0) {
+        console.warn('No rows updated in SQLite for artistID:', artistID);
+        return res.status(404).json({ error: 'User not found for update' });
       }
 
-      try {
-        const userRef = db.collection('users').doc(artistID);
-        await userRef.set(
-          { profilePhotoPath, bio, musicType },
-          { merge: true }
-        );
-
+      // Now update Firestore
+      db.collection('users').doc(artistID).set(
+        { profilePhotoPath, bio, musicType },
+        { merge: true }
+      ).then(() => {
         res.json({ success: true });
-      } catch (firestoreErr) {
+      }).catch(firestoreErr => {
         console.error('Firestore update error:', firestoreErr);
+        // Still success for SQLite but Firestore failed
         res.json({ success: true, firestoreError: 'Firestore update failed' });
-      }
+      });
     });
-  } catch (e) {
-    console.error('Profile update route error:', e);
-    res.status(500).json({ error: 'Server error' });
-  }
+  });
 });
 
 // API: Login
