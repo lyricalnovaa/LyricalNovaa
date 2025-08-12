@@ -60,17 +60,15 @@ app.use('/logo.png', express.static(path.join(__dirname, 'public/static/logo.png
 
 app.post('/api/generate-otp', async (req, res) => {
   try {
-    const otp = generateOTP();
     const { artistID } = req.body;
-
     if (!artistID) {
       return res.status(400).json({ error: 'Missing artistID' });
     }
 
-    // Hash OTP just like a normal password
-    const hashedOTP = await bcrypt.hash(otp, 10);
+    const otp = generateOTP(); // e.g. "OTP-123456"
+    const plainOTP = otp.slice(4); // "123456"
+    const hashedOTP = await bcrypt.hash(plainOTP, 10);
 
-    // Get user doc
     const userRef = db.collection('users').doc(artistID);
     const userSnap = await userRef.get();
 
@@ -78,12 +76,13 @@ app.post('/api/generate-otp', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Replace password hash with OTP hash + flag as OTP login
+    // Save hashed OTP and flag otpActive true
     await userRef.update({
       password: hashedOTP,
+      otpActive: true,
     });
 
-    res.json({ otp: otp.slice(4) }); // send OTP back to whoever called this endpoint
+    res.json({ otp: plainOTP });
   } catch (err) {
     console.error('Error generating OTP:', err);
     res.status(500).json({ error: 'Failed to generate OTP' });
@@ -137,6 +136,7 @@ app.get('/api/profile', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   const { artistID, password } = req.body;
   if (!artistID) return res.status(400).json({ error: 'Missing artistID' });
+  if (!password) return res.status(400).json({ error: 'Missing password' });
 
   try {
     const doc = await db.collection('users').doc(artistID).get();
@@ -144,32 +144,28 @@ app.post('/api/login', async (req, res) => {
 
     const user = doc.data();
 
-    if (!password || password.trim() === '') {
-      // generate OTP if no password sent
-      const newOTP = generateOTP().slice(4);
-      const hashedOTP = await bcrypt.hash(newOTP, 10);
-      await db.collection('users').doc(artistID).update({ password: 'OTP-' + hashedOTP });
-      return res.json({ otp: newOTP, message: 'OTP generated. Use this OTP as your password to login and reset your password.' });
-    }
-
-    if (user.password.startsWith('OTP-')) {
-      const hashedOTP = user.password.slice(4);
-      const matchOTP = await bcrypt.compare(password, hashedOTP);
-      if (matchOTP) {
-        // OTP matches — force password reset route
+    // Check if OTP login is active
+    if (user.otpActive) {
+      // Compare entered password with hashed OTP password
+      const isValidOTP = await bcrypt.compare(password, user.password);
+      if (isValidOTP) {
+        // Tell client to redirect to reset password page
         return res.status(403).json({ error: 'reset_password', artistID });
+      } else {
+        return res.status(401).json({ error: 'Wrong OTP' });
       }
-      return res.status(401).json({ error: 'Wrong OTP' });
     }
 
-    // Normal password login
+    // Normal login with regular password hash
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Wrong password' });
 
+    // Set session and respond success
     req.session.artistID = artistID;
     req.session.userRole = user.role;
     res.json({ role: user.role });
   } catch (e) {
+    console.error('Login error:', e);
     res.status(500).json({ error: 'Database error' });
   }
 });
@@ -177,18 +173,28 @@ app.post('/api/login', async (req, res) => {
 // API: Reset password
 app.post('/api/reset-password', async (req, res) => {
   const { artistID, newPassword } = req.body;
-  if (!artistID || !newPassword || newPassword.length < 4) return res.status(400).json({ error: 'Invalid input' });
+  if (!artistID || !newPassword || newPassword.length < 4)
+    return res.status(400).json({ error: 'Invalid input' });
 
   try {
     const doc = await db.collection('users').doc(artistID).get();
     if (!doc.exists) return res.status(404).json({ error: 'User not found' });
-    const user = doc.data();
-    if (!user.password.startsWith('OTP-')) return res.status(400).json({ error: 'Password reset not allowed' });
 
-    const hashed = await bcrypt.hash(newPassword, 10);
-    await db.collection('users').doc(artistID).update({ password: hashed });
+    const user = doc.data();
+
+    // Only allow reset if otpActive is true
+    if (!user.otpActive) return res.status(400).json({ error: 'Password reset not allowed' });
+
+    // Hash new password & update user doc + clear otpActive flag
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await db.collection('users').doc(artistID).update({
+      password: hashedNewPassword,
+      otpActive: false,
+    });
+
     res.json({ message: 'Password updated successfully' });
   } catch (e) {
+    console.error('Reset password error:', e);
     res.status(500).json({ error: 'DB error on update' });
   }
 });
