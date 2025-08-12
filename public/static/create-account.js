@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
       artistName, email, role, bio, musicType, password, confirmPassword
     });
 
-    if (!artistName || !email || !role || !musicType) {
+    if (!artistName || !email || !role || !musicType || !bio) {
       showAlert('Please fill all required fields.');
       return;
     }
