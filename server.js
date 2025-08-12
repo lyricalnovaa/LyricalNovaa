@@ -83,7 +83,7 @@ app.post('/api/generate-otp', async (req, res) => {
       password: hashedOTP,
     });
 
-    res.json({ otp }); // send OTP back to whoever called this endpoint
+    res.json({ otp: otp.slice(4) }); // send OTP back to whoever called this endpoint
   } catch (err) {
     console.error('Error generating OTP:', err);
     res.status(500).json({ error: 'Failed to generate OTP' });
