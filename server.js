@@ -80,9 +80,7 @@ app.post('/api/generate-otp', async (req, res) => {
 
     // Replace password hash with OTP hash + flag as OTP login
     await userRef.update({
-      passwordHash: hashedOTP,
-      otpRequired: true,
-      otpIssuedAt: new Date(),
+      password: hashedOTP,
     });
 
     res.json({ otp }); // send OTP back to whoever called this endpoint
