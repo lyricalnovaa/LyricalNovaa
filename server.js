@@ -61,7 +61,7 @@ app.use('/logo.png', express.static(path.join(__dirname, 'public/static/logo.png
 app.post('/api/generate-otp', async (req, res) => {
   try {
     const otp = generateOTP(); // store return value
-    const { userId } = req.body;
+    const { userId } = req.session.artistID;
 
     if (!userId) {
       return res.status(400).json({ error: 'Missing userId' });
