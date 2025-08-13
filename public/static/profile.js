@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
       if (editProfileBtn && username !== document.getElementById('profile-name').dataset.loggedInUsername) {
-        editProfileBtn.classList.add('hidden');
+        editProfileBtn.style.display = 'none';
       }
     } catch (err) {
       console.error(err);
