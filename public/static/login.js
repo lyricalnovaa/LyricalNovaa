@@ -26,37 +26,60 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  async function handleLogin() {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true; // prevent double clicks
+
     const artistID = form.artistID.value.trim();
     const password = form.password.value.trim();
 
     if (!artistID) {
       showCustomAlert('Please enter your Artist ID');
+      submitBtn.disabled = false;
       return;
     }
 
-    const response = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ artistID, password }),
-    });
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artistID, password }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok) {
-      if (data.otp) {
-        showCustomAlert(`Your OTP is: <strong>${data.otp}</strong><br>Use this OTP as your password to login and reset your password.`);
-      } else if (data.role) {
-        window.location.href = data.role === 'admin' ? '/admin-dashboard' : '/home';
-      }
-    } else {
-      if (data.error === 'reset_password') {
-        localStorage.setItem('resetArtistID', artistID);
-        window.location.href = '/reset-password';
+      if (response.ok) {
+        if (data.otp) {
+          showCustomAlert(`Your OTP is: <strong>${data.otp}</strong><br>Use this OTP as your password to login and reset your password.`);
+          submitBtn.disabled = false; // allow retry
+        } else if (data.role) {
+          window.location.href = data.role === 'admin' ? '/admin-dashboard' : '/home';
+        }
       } else {
-        showCustomAlert(data.error || 'Login failed');
+        if (data.error === 'reset_password') {
+          localStorage.setItem('resetArtistID', artistID);
+          window.location.href = '/reset-password';
+        } else {
+          showCustomAlert(data.error || 'Login failed');
+          submitBtn.disabled = false; // allow retry
+        }
       }
+    } catch (err) {
+      showCustomAlert('Network error. Try again.');
+      submitBtn.disabled = false;
+    }
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleLogin();
+  });
+
+  // Optional: handle Enter key presses anywhere in the form
+  form.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleLogin();
     }
   });
 });
