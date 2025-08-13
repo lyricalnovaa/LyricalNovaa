@@ -209,6 +209,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           postsContainer.appendChild(postDiv);
         });
       }
+      if (editProfileBtn && username !== document.getElementById('profile-name').dataset.loggedInUsername) {
+        editProfileBtn.classList.add('hidden');
+      }
     } catch (err) {
       console.error(err);
     }
