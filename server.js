@@ -28,10 +28,13 @@ const profilePhotoUpload = multer({
 });
 
 app.get('/api/profile/:username', async (req, res) => {
-  const username = req.params.username.replace(/^@/, '').toLowerCase();
+  const username = req.params.username.replace(/^@/, ''); // no toLowerCase()
   try {
     const usersRef = db.collection('users');
-    const snapshot = await usersRef.where('artistNameLower', '==', username).limit(1).get();
+    const snapshot = await usersRef
+      .where('artistName', '==', username)
+      .limit(1)
+      .get();
 
     if (snapshot.empty) {
       return res.status(404).json({ error: 'User not found' });
@@ -40,7 +43,7 @@ app.get('/api/profile/:username', async (req, res) => {
     const userDoc = snapshot.docs[0];
     const userData = userDoc.data();
 
-    // Don’t send sensitive data like artistID or password
+    // Don’t send sensitive stuff like password or artistID
     res.json({
       artistName: userData.artistName,
       profilePhotoPath: userData.profilePhotoPath,
