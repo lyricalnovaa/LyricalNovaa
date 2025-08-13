@@ -233,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
         postEl.innerHTML = `
           <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom: 6px;">
             <img src="${post.profilePhotoPath || '/static/default-pfp.png'}" alt="Profile Picture" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" />
-            <a href="/profile/@${post.artistName}" style="color:#06f; font-weight:bold; text-decoration:none;">@${post.artistName || post.artistID}</a>
+            <a href="/profile/${post.artistName}" style="color:#06f; font-weight:bold; text-decoration:none;">@${post.artistName || post.artistID}</a>
           </div>
           <div class="post-content" style="color:#eee; margin-bottom: 12px;">${post.content || ''}</div>
           ${mediaHTML}
