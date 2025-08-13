@@ -27,12 +27,32 @@ const profilePhotoUpload = multer({
   },
 });
 
-app.get('/profile/:username', (req, res) => {
-  if (!req.session.artistID) return res.redirect('/login');
-  // Always serve the same profile.html page since the frontend JS fetches profile data by username
-  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
-});
+app.get('/api/profile/:username', async (req, res) => {
+  const username = req.params.username.replace(/^@/, '').toLowerCase();
+  try {
+    const usersRef = db.collection('users');
+    const snapshot = await usersRef.where('artistNameLower', '==', username).limit(1).get();
 
+    if (snapshot.empty) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userDoc = snapshot.docs[0];
+    const userData = userDoc.data();
+
+    // Don’t send sensitive data like artistID or password
+    res.json({
+      artistName: userData.artistName,
+      profilePhotoPath: userData.profilePhotoPath,
+      bio: userData.bio,
+      musicType: userData.musicType,
+      role: userData.role,
+    });
+  } catch (err) {
+    console.error('Error fetching user by username:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 const postUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
