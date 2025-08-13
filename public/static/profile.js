@@ -17,6 +17,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   const profileMusicType = document.getElementById('profile-music-type');
   const profileBio = document.getElementById('profile-bio');
 
+  // --------------------
+  // ADDITION: Hide Edit Profile if viewing another user
+  const pathParts = window.location.pathname.split('/');
+  const viewingOtherProfile = pathParts.length === 3 && pathParts[1] === 'profile' && pathParts[2];
+  if (viewingOtherProfile) {
+    editProfileBtn?.classList.add('hidden'); // hide button when viewing another profile
+  }
+  // --------------------
+
   // Mobile menu toggle
   menuBtn?.addEventListener('click', () => {
     menu?.classList.toggle('hidden');
@@ -131,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // <-- added
+        credentials: 'include',
         body: JSON.stringify({
           profilePhotoPath: updatedPic,
           bio: updatedBio,
@@ -148,7 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sqliteRes = await fetch('/api/profile', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include', // <-- added
+          credentials: 'include',
           body: JSON.stringify({
             profilePhotoPath: updatedPic,
             bio: updatedBio,
@@ -209,9 +218,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           postsContainer.appendChild(postDiv);
         });
       }
+
+      // --------------------
+      // ADDITION: hide Edit Profile button if viewing someone else
+      const editProfileBtn = document.getElementById('edit-profile-btn');
       if (editProfileBtn && username !== document.getElementById('profile-name').dataset.loggedInUsername) {
         editProfileBtn.style.display = 'none';
       }
+      // --------------------
+
     } catch (err) {
       console.error(err);
     }
