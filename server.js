@@ -27,6 +27,12 @@ const profilePhotoUpload = multer({
   },
 });
 
+app.get('/profile/:username', (req, res) => {
+  if (!req.session.artistID) return res.redirect('/login');
+  // Always serve the same profile.html page since the frontend JS fetches profile data by username
+  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+});
+
 const postUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
