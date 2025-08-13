@@ -27,6 +27,10 @@ const profilePhotoUpload = multer({
   },
 });
 
+app.get('/profile/:username', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+});
+
 app.get('/api/profile/:username', async (req, res) => {
   const usernameRaw = req.params.username;
   const username = usernameRaw.replace(/^@/, '').trim();
