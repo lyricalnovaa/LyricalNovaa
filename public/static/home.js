@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const alertModal = document.getElementById("alert-modal");
   const alertText = document.getElementById("alert-text");
   const alertOk = document.getElementById("alert-ok");
-  const feedContainer = document.getElementById("feed");
 
   function showAlert(msg, callback) {
     alertText.textContent = msg;
@@ -37,16 +36,28 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // =========================
-  // Post creation modal
+  // Create Post Modal Logic
   // =========================
   const createPostBtn = document.getElementById("add-post-btn");
   const postModal = document.getElementById("create-post-modal");
   const cancelPostBtn = document.getElementById("cancel-post");
   const submitPostBtn = document.getElementById("submit-post");
   const postTextArea = document.getElementById("post-text");
+  const loggedInUserEl = document.getElementById("logged-in-user");
   const fileUploadInput = document.getElementById("file-upload");
   const filePreview = document.getElementById("file-preview");
   let uploadedFile = null;
+
+  fetch("/api/current-user")
+    .then(res => res.json())
+    .then(data => {
+      if (data?.artistID) {
+        loggedInUserEl.textContent = "@" + data.artistID;
+      }
+    })
+    .catch(() => {
+      loggedInUserEl.textContent = "@unknown";
+    });
 
   createPostBtn.onclick = () => {
     postModal.style.display = "flex";
@@ -102,7 +113,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      let body, headers;
+      let body;
+      let headers;
+
       if (uploadedFile) {
         body = new FormData();
         body.append("content", content);
@@ -113,7 +126,12 @@ document.addEventListener("DOMContentLoaded", () => {
         headers = { "Content-Type": "application/json" };
       }
 
-      const res = await fetch("/api/post", { method: "POST", headers, body });
+      const res = await fetch("/api/post", {
+        method: "POST",
+        headers,
+        body,
+      });
+
       if (res.ok) {
         showAlert("Post created!", () => {
           postModal.style.display = "none";
@@ -130,16 +148,65 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // =========================
-  // Feed
+  // Inline Post Box Logic
   // =========================
+  const postInput = document.getElementById("post-input");
+  const submitPostBtnInline = document.getElementById("submit-post-inline");
+  const loggedInUserInline = document.getElementById("logged-in-user-inline");
+
+  fetch("/api/current-user")
+    .then(res => res.json())
+    .then(data => {
+      if (data?.artistID && loggedInUserInline) {
+        loggedInUserInline.textContent = "@" + data.artistID;
+      }
+    })
+    .catch(() => {
+      if (loggedInUserInline) loggedInUserInline.textContent = "@unknown";
+    });
+
+  if (submitPostBtnInline) submitPostBtnInline.disabled = true;
+
+  if (postInput && submitPostBtnInline) {
+    postInput.addEventListener("input", () => {
+      submitPostBtnInline.disabled = postInput.value.trim() === "";
+    });
+
+    submitPostBtnInline.addEventListener("click", async () => {
+      const content = postInput.value.trim();
+      if (!content) {
+        alert("Post content cannot be empty.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+
+        if (res.ok) {
+          alert("Post created!");
+          postInput.value = "";
+          submitPostBtnInline.disabled = true;
+          loadFeed();
+        } else {
+          alert("Failed to post.");
+        }
+      } catch {
+        alert("Server error on post.");
+      }
+    });
+  }
+
+  // =========================
+  // Feed loading
+  // =========================
+  const feedContainer = document.getElementById("feed");
+
   async function loadFeed() {
     if (!feedContainer) return;
-
-    let currentUser = {};
-    try {
-      const userRes = await fetch("/api/current-user");
-      currentUser = await userRes.json();
-    } catch {}
 
     try {
       const res = await fetch("/api/posts");
@@ -163,174 +230,34 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
 
-        // Only show ... menu for the owner
-        let menuHTML = "";
-        if (post.artistID === currentUser.artistID) {
-          menuHTML = `
-            <div class="post-menu" style="position:relative; cursor:pointer;">…
-              <div class="menu-dropdown hidden" style="position:absolute; top:20px; left:0; background:#000; border:1px solid #06f; border-radius:6px; padding:5px; z-index:100;">
-                <button class="edit-post-btn" data-id="${post.id}" style="display:block; width:100%; background:none; border:none; color:#06f; text-align:left; padding:5px;">Edit Post</button>
-                <button class="delete-post-btn" data-id="${post.id}" style="display:block; width:100%; background:none; border:none; color:#06f; text-align:left; padding:5px;">Delete Post</button>
-              </div>
-            </div>
-          `;
-        }
-
         postEl.innerHTML = `
-          <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+          <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom: 6px;">
             <img src="${post.profilePhotoPath || '/static/default-pfp.png'}" alt="Profile Picture" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" />
-            <a href="/profile/${post.artistName}" style="color:#06f; font-weight:bold; text-decoration:none;">@${post.artistName || post.artistID}</a>
-            ${menuHTML}
+            <a href="/profile/${post.artistName}" style="color:#06f; font-weight:bold; text-decoration:none;">${post.artistName || post.artistID}</a>
           </div>
-          <div class="post-content" style="color:#eee; margin-bottom:12px;">${post.content || ''}</div>
+          <div class="post-content" style="color:#eee; margin-bottom: 12px;">${post.content || ''}</div>
           ${mediaHTML}
         `;
 
         feedContainer.appendChild(postEl);
-
-        // Menu functionality
-        if (post.artistID === currentUser.artistID) {
-          const menu = postEl.querySelector(".post-menu");
-          const dropdown = postEl.querySelector(".menu-dropdown");
-          const editBtn = postEl.querySelector(".edit-post-btn");
-          const deleteBtn = postEl.querySelector(".delete-post-btn");
-
-          menu.addEventListener("click", e => {
-            e.stopPropagation();
-            dropdown.classList.toggle("hidden");
-          });
-
-          editBtn.addEventListener("click", () => openEditModal(post));
-          deleteBtn.addEventListener("click", () => deletePost(post.id));
-        }
       });
-
-      document.addEventListener("click", () => {
-        document.querySelectorAll(".menu-dropdown").forEach(d => d.classList.add("hidden"));
-      });
-
     } catch {
       feedContainer.textContent = "Failed to load feed.";
     }
   }
 
-  // =========================
-  // Edit Post Modal
-  // =========================
-  const editModal = document.getElementById("edit-post-modal");
-  const editText = document.getElementById("edit-post-text");
-  const editFileInput = document.getElementById("edit-file-upload");
-  const editFilePreview = document.getElementById("edit-file-preview");
-  const cancelEditBtn = document.getElementById("cancel-edit-post");
-  const saveEditBtn = document.getElementById("save-edit-post");
-  let currentEditPost = null;
-  let newUploadedFile = null;
-
-  function clearEditPreview() {
-    editFilePreview.innerHTML = "";
-    newUploadedFile = null;
-    editFileInput.value = "";
-  }
-
-  function openEditModal(post) {
-    currentEditPost = post;
-    editText.value = post.content || "";
-    clearEditPreview();
-    if (post.mediaPath) {
-      if (post.mediaType === "image") {
-        const img = document.createElement("img");
-        img.src = post.mediaPath;
-        editFilePreview.appendChild(img);
-      } else if (post.mediaType === "video") {
-        const video = document.createElement("video");
-        video.src = post.mediaPath;
-        video.controls = true;
-        editFilePreview.appendChild(video);
+  fetch("/api/current-user")
+    .then(res => res.json())
+    .then(data => {
+      if (data?.artistID) {
+        const loggedInUserEl = document.getElementById("logged-in-user");
+        if (loggedInUserEl) loggedInUserEl.textContent = "@" + data.artistID;
       }
-    }
-    editModal.style.display = "flex";
-  }
-
-  cancelEditBtn.onclick = () => {
-    editModal.style.display = "none";
-    currentEditPost = null;
-    clearEditPreview();
-  };
-
-  editFileInput.addEventListener("change", () => {
-    const file = editFileInput.files[0];
-    newUploadedFile = file || null;
-    clearEditPreview();
-
-    if (!file) return;
-
-    const reader = new FileReader();
-    if (file.type.startsWith("image/")) {
-      reader.onload = e => {
-        const img = document.createElement("img");
-        img.src = e.target.result;
-        editFilePreview.appendChild(img);
-      };
-    } else if (file.type.startsWith("video/")) {
-      reader.onload = e => {
-        const video = document.createElement("video");
-        video.src = e.target.result;
-        video.controls = true;
-        editFilePreview.appendChild(video);
-      };
-    }
-    reader.readAsDataURL(file);
-  });
-
-  saveEditBtn.onclick = async () => {
-    if (!currentEditPost) return;
-    const content = editText.value.trim();
-    try {
-      let body, headers;
-      if (newUploadedFile) {
-        body = new FormData();
-        body.append("content", content);
-        body.append("file", newUploadedFile);
-        headers = {};
-      } else {
-        body = JSON.stringify({ content });
-        headers = { "Content-Type": "application/json" };
-      }
-
-      const res = await fetch(`/api/posts/${currentEditPost.id}`, {
-        method: "PUT",
-        headers,
-        body,
-      });
-
-      if (res.ok) {
-        showAlert("Post updated!", () => {
-          editModal.style.display = "none";
-          currentEditPost = null;
-          clearEditPreview();
-          loadFeed();
-        });
-      } else {
-        showAlert("Failed to update post.");
-      }
-    } catch {
-      showAlert("Server error on updating post.");
-    }
-  };
-
-  // =========================
-  // Delete Post
-  // =========================
-  function deletePost(postID) {
-    if (!confirm("Are you sure you want to delete this post?")) return;
-    fetch(`/api/posts/${postID}`, { method: "DELETE", credentials: "include" })
-      .then(res => {
-        if (res.ok) {
-          const postEl = document.querySelector(`.edit-post-btn[data-id='${postID}']`)?.closest(".post");
-          if (postEl) postEl.remove();
-        } else showAlert("Failed to delete post.");
-      });
-  }
+    })
+    .catch(() => {
+      const loggedInUserEl = document.getElementById("logged-in-user");
+      if (loggedInUserEl) loggedInUserEl.textContent = "@unknown";
+    });
 
   loadFeed();
 });
