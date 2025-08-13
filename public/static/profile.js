@@ -177,3 +177,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 function editPost(postID) {
   alert('Editing post: ' + postID);
 }
+
+// --------------------
+// EXTRA: Show other users' profile if /profile/:username
+// --------------------
+document.addEventListener('DOMContentLoaded', async () => {
+  const pathParts = window.location.pathname.split('/');
+  if (pathParts.length === 3 && pathParts[1] === 'profile' && pathParts[2]) {
+    const username = pathParts[2].replace('@', '');
+    try {
+      const res = await fetch(`/api/profile/${encodeURIComponent(username)}`);
+      if (!res.ok) throw new Error('User not found');
+
+      const userData = await res.json();
+
+      document.getElementById('profile-name').textContent = `@${userData.artistName || 'Unknown'}`;
+      document.getElementById('profile-role').textContent = userData.role || 'No role set';
+      document.getElementById('profile-music-type').textContent = userData.musicType || 'No music type set';
+      document.getElementById('profile-bio').textContent = userData.bio || 'No bio available';
+      document.getElementById('profile-pic').src = userData.profilePhotoPath || '/static/default-pfp.png';
+
+      const postsContainer = document.getElementById('posts');
+      postsContainer.innerHTML = '';
+      if (!userData.posts || userData.posts.length === 0) {
+        postsContainer.innerHTML = `<p>No posts yet.</p>`;
+      } else {
+        userData.posts.forEach(post => {
+          const postDiv = document.createElement('div');
+          postDiv.className = 'post';
+          postDiv.innerHTML = `<p>${post.content}</p>`;
+          postsContainer.appendChild(postDiv);
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+});
