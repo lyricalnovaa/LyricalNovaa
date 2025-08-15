@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fileUploadInput.addEventListener("change", () => {
     const file = fileUploadInput.files[0];
     uploadedFile = file || null;
-    clearFilePreview();
+    filePreview.innerHTML = "";
 
     if (!file) return;
 
@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================
-  // Submit Post (FIXED)
+  // Submit Post
   // =========================
   submitPostBtn.onclick = async () => {
     const content = postTextArea.value.trim();
@@ -121,9 +121,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (uploadedFile) {
         const formData = new FormData();
         formData.append("content", content);
-        formData.append("media", uploadedFile); // Must match server multer
+        formData.append("media", uploadedFile);
         fetchOptions = { method: "POST", body: formData };
-        console.log("Uploading file:", uploadedFile);
       } else {
         fetchOptions = {
           method: "POST",
@@ -251,52 +250,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  fetch("/api/current-user")
-    .then(res => res.json())
-    .then(data => {
-      if (data?.artistID) {
-        const loggedInUserEl = document.getElementById("logged-in-user");
-        if (loggedInUserEl) loggedInUserEl.textContent = "@" + data.artistID;
-      }
-    })
-    .catch(() => {
-      const loggedInUserEl = document.getElementById("logged-in-user");
-      if (loggedInUserEl) loggedInUserEl.textContent = "@unknown";
-    });
-
   loadFeed();
-
-  // =========================
-  // Extra: Media upload preview logic (no Firebase keys)
-  // =========================
-  const postUploadInput = document.getElementById("file-upload"); // already exists
-  const postFilePreview = document.getElementById("file-preview"); // already exists
-  let postUploadedFile = null;
-
-  postUploadInput.addEventListener("change", () => {
-    const file = postUploadInput.files[0];
-    postUploadedFile = file || null;
-    postFilePreview.innerHTML = "";
-
-    if (!file) return;
-
-    const reader = new FileReader();
-    if (file.type.startsWith("image/")) {
-      reader.onload = e => {
-        const img = document.createElement("img");
-        img.src = e.target.result;
-        img.style.maxWidth = "100%";
-        postFilePreview.appendChild(img);
-      };
-    } else if (file.type.startsWith("video/")) {
-      reader.onload = e => {
-        const video = document.createElement("video");
-        video.src = e.target.result;
-        video.controls = true;
-        video.style.maxWidth = "100%";
-        postFilePreview.appendChild(video);
-      };
-    }
-    reader.readAsDataURL(file);
-  });
 });
