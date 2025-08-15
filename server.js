@@ -406,7 +406,6 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
       try {
         await fileUpload.save(file.buffer, {
           metadata: { contentType: file.mimetype },
-          public: true,
         });
 
         await fileUpload.makePublic();
