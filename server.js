@@ -4,20 +4,35 @@ const session = require('express-session');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const AWS = require('aws-sdk');
 
 const admin = require('firebase-admin');
 const app = express();
 
-// Initialize Firebase Admin from base64 env var
+// =========================
+// Initialize Firebase Admin
+// =========================
 const firebaseConfig = JSON.parse(Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString('utf8'));
 admin.initializeApp({
   credential: admin.credential.cert(firebaseConfig),
   storageBucket: firebaseConfig.project_id + ".appspot.com"
 });
 const db = admin.firestore();
-const bucket = admin.storage().bucket(); // Get default bucket
+const bucket = admin.storage().bucket(); // default bucket
 
-// Multer configs
+// =========================
+// Configure AWS S3
+// =========================
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION || 'us-east-2',
+});
+const S3_BUCKET = process.env.S3_BUCKET_NAME || 'awsdatabase3';
+
+// =========================
+// Multer Configs
+// =========================
 const profilePhotoUpload = multer({
   dest: path.join(__dirname, 'uploads/'),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -27,40 +42,6 @@ const profilePhotoUpload = multer({
   },
 });
 
-app.get('/profile/:username', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
-});
-
-app.get('/api/profile/:username', async (req, res) => {
-  const usernameRaw = req.params.username;
-  const username = usernameRaw.replace(/^@/, '').trim();
-
-  console.log('Fetching profile for:', username);
-
-  try {
-    const usersRef = db.collection('users');
-    const snapshot = await usersRef.where('artistName', '==', username).limit(1).get();
-
-    if (snapshot.empty) {
-      console.log('No user found for:', username);
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const userDoc = snapshot.docs[0];
-    const userData = userDoc.data();
-
-    res.json({
-      artistName: userData.artistName,
-      profilePhotoPath: userData.profilePhotoPath,
-      bio: userData.bio,
-      musicType: userData.musicType,
-      role: userData.role,
-    });
-  } catch (err) {
-    console.error('Error fetching user by username:', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
 const postUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
@@ -70,6 +51,9 @@ const postUpload = multer({
   },
 });
 
+// =========================
+// Utilities
+// =========================
 function generateOTP() {
   return `OTP-${Math.floor(100000 + Math.random() * 900000)}`;
 }
@@ -78,6 +62,9 @@ function generateArtistID() {
   return Math.floor(10000000 + Math.random() * 90000000).toString();
 }
 
+// =========================
+// Express Middleware
+// =========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
@@ -90,38 +77,11 @@ app.use('/static', express.static(path.join(__dirname, 'public/static')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/logo.png', express.static(path.join(__dirname, 'public/static/logo.png')));
 
+// =========================
 // ROUTES
+// =========================
 
-app.post('/api/generate-otp', async (req, res) => {
-  try {
-    const { artistID } = req.body;
-    if (!artistID) {
-      return res.status(400).json({ error: 'Missing artistID' });
-    }
-
-    const otp = generateOTP();
-    const plainOTP = otp.slice(4);
-    const hashedOTP = await bcrypt.hash(plainOTP, 10);
-
-    const userRef = db.collection('users').doc(artistID);
-    const userSnap = await userRef.get();
-
-    if (!userSnap.exists) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    await userRef.update({
-      password: hashedOTP,
-      otpActive: true,
-    });
-
-    res.json({ otp: plainOTP });
-  } catch (err) {
-    console.error('Error generating OTP:', err);
-    res.status(500).json({ error: 'Failed to generate OTP' });
-  }
-});
-
+// Home/Login/Pages
 app.get('/', (req, res) => {
   if (req.session.artistID) {
     if (req.session.userRole === 'admin') return res.redirect('/admin-dashboard');
@@ -145,8 +105,14 @@ app.get('/profile', (req, res) => {
   if (!req.session.artistID) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
+app.get('/event', (req, res) => {
+  if (!req.session.artistID) return res.redirect('/login');
+  res.sendFile(path.join(__dirname, 'public', 'event.html'));
+});
 
-// API: Get logged-in user's profile data
+// =========================
+// API: Profile
+// =========================
 app.get('/api/profile', async (req, res) => {
   const artistID = req.session.artistID;
   if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
@@ -171,14 +137,11 @@ app.get('/api/profile', async (req, res) => {
   }
 });
 
-// API: Update profile with Firebase only, no SQLite
 app.put('/api/profile', async (req, res) => {
   const { profilePhotoPath, bio, musicType } = req.body;
   const artistID = req.session.artistID;
 
-  if (!artistID) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
+  if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
 
   try {
     const userRef = db.collection('users').doc(artistID);
@@ -193,25 +156,22 @@ app.put('/api/profile', async (req, res) => {
   }
 });
 
-// API: Login
+// =========================
+// API: Authentication
+// =========================
 app.post('/api/login', async (req, res) => {
   const { artistID, password } = req.body;
-  if (!artistID) return res.status(400).json({ error: 'Missing artistID' });
-  if (!password) return res.status(400).json({ error: 'Missing password' });
+  if (!artistID || !password) return res.status(400).json({ error: 'Missing credentials' });
 
   try {
     const doc = await db.collection('users').doc(artistID).get();
     if (!doc.exists) return res.status(401).json({ error: 'Invalid artistID' });
 
     const user = doc.data();
-
     if (user.otpActive) {
       const isValidOTP = await bcrypt.compare(password, user.password);
-      if (isValidOTP) {
-        return res.status(403).json({ error: 'reset_password', artistID });
-      } else {
-        return res.status(401).json({ error: 'Wrong OTP' });
-      }
+      if (isValidOTP) return res.status(403).json({ error: 'reset_password', artistID });
+      else return res.status(401).json({ error: 'Wrong OTP' });
     }
 
     const match = await bcrypt.compare(password, user.password);
@@ -226,7 +186,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// API: Reset password
 app.post('/api/reset-password', async (req, res) => {
   const { artistID, newPassword } = req.body;
   if (!artistID || !newPassword || newPassword.length < 4)
@@ -235,9 +194,7 @@ app.post('/api/reset-password', async (req, res) => {
   try {
     const doc = await db.collection('users').doc(artistID).get();
     if (!doc.exists) return res.status(404).json({ error: 'User not found' });
-
     const user = doc.data();
-
     if (!user.otpActive) return res.status(400).json({ error: 'Password reset not allowed' });
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
@@ -253,7 +210,27 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-// API: Create account with profile photo upload
+app.post('/api/generate-otp', async (req, res) => {
+  const { artistID } = req.body;
+  if (!artistID) return res.status(400).json({ error: 'Missing artistID' });
+
+  try {
+    const otp = generateOTP();
+    const plainOTP = otp.slice(4);
+    const hashedOTP = await bcrypt.hash(plainOTP, 10);
+
+    const userRef = db.collection('users').doc(artistID);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) return res.status(404).json({ error: 'User not found' });
+
+    await userRef.update({ password: hashedOTP, otpActive: true });
+    res.json({ otp: plainOTP });
+  } catch (err) {
+    console.error('Error generating OTP:', err);
+    res.status(500).json({ error: 'Failed to generate OTP' });
+  }
+});
+
 app.post('/api/create-account', profilePhotoUpload.single('profilePhoto'), async (req, res) => {
   try {
     const { artistName, email, role, bio = '', musicType, password } = req.body;
@@ -293,17 +270,177 @@ app.post('/api/create-account', profilePhotoUpload.single('profilePhoto'), async
   }
 });
 
-// API: Logout
 app.post('/api/logout', (req, res) => {
   req.session.destroy(() => res.json({ message: 'Logged out' }));
 });
 
-app.get('/event', (req, res) => {
-  if (!req.session.artistID) return res.redirect('/login');
-  res.sendFile(path.join(__dirname, 'public', 'event.html'));
+// =========================
+// API: Create Post (S3 upload)
+// =========================
+app.post('/api/post', postUpload.single('media'), async (req, res) => {
+  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+
+  const content = req.body.content || '';
+  let mediaURL = null;
+  let mediaType = null;
+
+  try {
+    if (req.file) {
+      const timestamp = Date.now();
+      const fileName = `posts/${timestamp}-${req.file.originalname}`;
+      const params = {
+        Bucket: S3_BUCKET,
+        Key: fileName,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+        ACL: 'public-read',
+      };
+
+      const uploadResult = await s3.upload(params).promise();
+      mediaURL = uploadResult.Location;
+      mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
+    }
+
+    const postDoc = await db.collection('posts').add({
+      artistID: req.session.artistID,
+      content,
+      mediaPath: mediaURL,
+      mediaType,
+      createdAt: new Date().toISOString(),
+    });
+
+    res.json({
+      message: 'Post created',
+      postId: postDoc.id,
+      mediaPath: mediaURL,
+      mediaType,
+      content,
+    });
+  } catch (error) {
+    console.error('Error creating post:', error);
+    res.status(500).json({ error: 'Failed to create post' });
+  }
 });
 
-// Poll endpoints
+// =========================
+// API: Fetch Posts
+// =========================
+app.get('/api/posts', async (req, res) => {
+  try {
+    const snapshot = await db.collection('posts')
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+
+    const posts = await Promise.all(snapshot.docs.map(async doc => {
+      const post = doc.data();
+      post.id = doc.id;
+
+      const userDoc = await db.collection('users').doc(post.artistID).get();
+      if (userDoc.exists) {
+        post.artistName = userDoc.data().artistName;
+        post.profilePhotoPath = userDoc.data().profilePhotoPath;
+      }
+
+      const likesSnap = await db.collection('likes').where('postID', '==', post.id).get();
+      post.likeCount = likesSnap.size;
+
+      const commentsSnap = await db.collection('comments').where('postID', '==', post.id).get();
+      post.commentCount = commentsSnap.size;
+
+      post.mediaPath = post.mediaPath || null;
+      return post;
+    }));
+
+    res.json(posts);
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    res.status(500).json({ error: 'Failed to fetch posts' });
+  }
+});
+
+// =========================
+// API: Like/Unlike
+// =========================
+app.post('/api/like', async (req, res) => {
+  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+  const { postID } = req.body;
+  if (!postID) return res.status(400).json({ error: 'Missing postID' });
+
+  try {
+    const likeQuery = await db.collection('likes')
+      .where('postID', '==', postID)
+      .where('artistID', '==', req.session.artistID)
+      .limit(1)
+      .get();
+
+    if (!likeQuery.empty) {
+      await db.collection('likes').doc(likeQuery.docs[0].id).delete();
+      return res.json({ message: 'Unliked' });
+    } else {
+      await db.collection('likes').add({
+        postID,
+        artistID: req.session.artistID,
+        createdAt: new Date().toISOString(),
+      });
+      return res.json({ message: 'Liked' });
+    }
+  } catch {
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
+// =========================
+// API: Comments
+// =========================
+app.post('/api/comment', async (req, res) => {
+  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+  const { postID, comment } = req.body;
+  if (!postID || !comment) return res.status(400).json({ error: 'Missing postID or comment' });
+
+  try {
+    const commentRef = await db.collection('comments').add({
+      postID,
+      artistID: req.session.artistID,
+      comment,
+      createdAt: new Date().toISOString(),
+    });
+    res.json({ message: 'Comment added', commentId: commentRef.id });
+  } catch {
+    res.status(500).json({ error: 'Failed to add comment' });
+  }
+});
+
+app.get('/api/comments/:postID', async (req, res) => {
+  const postID = req.params.postID;
+  try {
+    const snapshot = await db.collection('comments')
+      .where('postID', '==', postID)
+      .orderBy('createdAt', 'asc')
+      .get();
+
+    const comments = await Promise.all(snapshot.docs.map(async doc => {
+      const comment = doc.data();
+      comment.id = doc.id;
+
+      const userDoc = await db.collection('users').doc(comment.artistID).get();
+      if (userDoc.exists) {
+        comment.artistName = userDoc.data().artistName;
+        comment.profilePhotoPath = userDoc.data().profilePhotoPath;
+      }
+
+      return comment;
+    }));
+
+    res.json(comments);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch comments' });
+  }
+});
+
+// =========================
+// Polls
+// =========================
 app.get('/api/polls', async (req, res) => {
   try {
     const snapshot = await db.collection('polls').get();
@@ -314,7 +451,6 @@ app.get('/api/polls', async (req, res) => {
   }
 });
 
-// ADMIN ONLY: Create polls/events
 app.post('/api/polls', (req, res, next) => {
   if (req.session.userRole !== 'admin') return res.status(403).json({ error: 'Only admins can create polls/events' });
   next();
@@ -346,7 +482,6 @@ app.post('/api/polls', (req, res, next) => {
   }
 });
 
-// ADMIN ONLY: Delete polls/events
 app.delete('/api/polls/:id', async (req, res) => {
   if (req.session.userRole !== 'admin') return res.status(403).json({ error: 'Only admins can delete polls/events' });
   const pollId = req.params.id;
@@ -359,7 +494,6 @@ app.delete('/api/polls/:id', async (req, res) => {
   }
 });
 
-// USERS CAN VOTE, ADMINS CAN'T
 app.post('/api/vote', (req, res, next) => {
   if (req.session.userRole === 'admin') return res.status(403).json({ error: 'Admins cannot vote' });
   next();
@@ -380,167 +514,42 @@ app.post('/api/vote', (req, res, next) => {
   }
 });
 
-// POST creation route with media upload to Firebase Storage
-app.post('/api/post', postUpload.single('media'), async (req, res) => {
-  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
+// =========================
+// API: Fetch profile by username
+// =========================
+app.get('/api/profile/:username', async (req, res) => {
+  const usernameRaw = req.params.username;
+  const username = usernameRaw.replace(/^@/, '').trim();
 
-  const content = req.body.content || '';
-  let mediaURL = null;
-  let mediaType = null;
+  console.log('Fetching profile for:', username);
 
   try {
-    if (req.file) {
-      const timestamp = Date.now();
-      const fileName = `posts/${timestamp}-${req.file.originalname}`;
-      const file = req.file;
+    const usersRef = db.collection('users');
+    const snapshot = await usersRef.where('artistName', '==', username).limit(1).get();
 
-      if (!file.buffer) return res.status(400).json({ error: 'File upload failed' });
-
-      const fileUpload = bucket.file(fileName);
-
-      await fileUpload.save(file.buffer, { metadata: { contentType: file.mimetype } });
-      await fileUpload.makePublic();
-
-      mediaURL = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-      mediaType = file.mimetype.startsWith('image/') ? 'image' : 'video';
+    if (snapshot.empty) {
+      console.log('No user found for:', username);
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    const postDoc = await db.collection('posts').add({
-      artistID: req.session.artistID,
-      content,
-      mediaPath: mediaURL,
-      mediaType,
-      createdAt: new Date().toISOString(),
-    });
+    const userDoc = snapshot.docs[0];
+    const userData = userDoc.data();
 
     res.json({
-      message: 'Post created',
-      postId: postDoc.id,
-      mediaPath: mediaURL,
-      mediaType,
-      content,
+      artistName: userData.artistName,
+      profilePhotoPath: userData.profilePhotoPath,
+      bio: userData.bio,
+      musicType: userData.musicType,
+      role: userData.role,
     });
-  } catch (error) {
-    console.error('Error creating post:', error);
-    res.status(500).json({ error: 'Failed to create post' });
+  } catch (err) {
+    console.error('Error fetching user by username:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Fetch posts with media + likes + comments
-app.get('/api/posts', async (req, res) => {
-  try {
-    const snapshot = await db.collection('posts')
-      .orderBy('createdAt', 'desc')
-      .limit(50)
-      .get();
-
-    const posts = await Promise.all(snapshot.docs.map(async doc => {
-      const post = doc.data();
-      post.id = doc.id;
-
-      // Add artist info
-      const userDoc = await db.collection('users').doc(post.artistID).get();
-      if (userDoc.exists) {
-        post.artistName = userDoc.data().artistName;
-        post.profilePhotoPath = userDoc.data().profilePhotoPath;
-      }
-
-      // Likes
-      const likesSnap = await db.collection('likes').where('postID', '==', post.id).get();
-      post.likeCount = likesSnap.size;
-
-      // Comments
-      const commentsSnap = await db.collection('comments').where('postID', '==', post.id).get();
-      post.commentCount = commentsSnap.size;
-
-      post.mediaPath = post.mediaPath || null;
-
-      return post;
-    }));
-
-    res.json(posts);
-  } catch (error) {
-    console.error('Error fetching posts:', error);
-    res.status(500).json({ error: 'Failed to fetch posts' });
-  }
-});
-
-// Like/unlike toggle
-app.post('/api/like', async (req, res) => {
-  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-  const { postID } = req.body;
-  if (!postID) return res.status(400).json({ error: 'Missing postID' });
-
-  try {
-    const likeQuery = await db.collection('likes')
-      .where('postID', '==', postID)
-      .where('artistID', '==', req.session.artistID)
-      .limit(1)
-      .get();
-
-    if (!likeQuery.empty) {
-      await db.collection('likes').doc(likeQuery.docs[0].id).delete();
-      return res.json({ message: 'Unliked' });
-    } else {
-      await db.collection('likes').add({
-        postID,
-        artistID: req.session.artistID,
-        createdAt: new Date().toISOString(),
-      });
-      return res.json({ message: 'Liked' });
-    }
-  } catch {
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-// Comment on post
-app.post('/api/comment', async (req, res) => {
-  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-  const { postID, comment } = req.body;
-  if (!postID || !comment) return res.status(400).json({ error: 'Missing postID or comment' });
-
-  try {
-    const commentRef = await db.collection('comments').add({
-      postID,
-      artistID: req.session.artistID,
-      comment,
-      createdAt: new Date().toISOString(),
-    });
-    res.json({ message: 'Comment added', commentId: commentRef.id });
-  } catch {
-    res.status(500).json({ error: 'Failed to add comment' });
-  }
-});
-
-// Get comments for a post
-app.get('/api/comments/:postID', async (req, res) => {
-  const postID = req.params.postID;
-  try {
-    const snapshot = await db.collection('comments')
-      .where('postID', '==', postID)
-      .orderBy('createdAt', 'asc')
-      .get();
-
-    const comments = await Promise.all(snapshot.docs.map(async doc => {
-      const comment = doc.data();
-      comment.id = doc.id;
-
-      const userDoc = await db.collection('users').doc(comment.artistID).get();
-      if (userDoc.exists) {
-        comment.artistName = userDoc.data().artistName;
-        comment.profilePhotoPath = userDoc.data().profilePhotoPath;
-      }
-
-      return comment;
-    }));
-
-    res.json(comments);
-  } catch {
-    res.status(500).json({ error: 'Failed to fetch comments' });
-  }
-});
-
-// Server listening
+// =========================
+// Server start
+// =========================
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
