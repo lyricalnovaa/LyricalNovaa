@@ -78,26 +78,24 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!file) return;
 
     const reader = new FileReader();
-    if (file.type.startsWith("image/")) {
-      reader.onload = e => {
+    reader.onload = e => {
+      if (file.type.startsWith("image/")) {
         const img = document.createElement("img");
         img.src = e.target.result;
         img.style.maxWidth = "100%";
         filePreview.appendChild(img);
-      };
-    } else if (file.type.startsWith("video/")) {
-      reader.onload = e => {
+      } else if (file.type.startsWith("video/")) {
         const video = document.createElement("video");
         video.src = e.target.result;
         video.controls = true;
         video.style.maxWidth = "100%";
         filePreview.appendChild(video);
-      };
-    } else {
-      const info = document.createElement("p");
-      info.textContent = `File: ${file.name} (${Math.round(file.size / 1024)} KB)`;
-      filePreview.appendChild(info);
-    }
+      } else {
+        const info = document.createElement("p");
+        info.textContent = `File: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+        filePreview.appendChild(info);
+      }
+    };
     reader.readAsDataURL(file);
   });
 
@@ -108,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================
-  // Submit Post (Fixed for file upload)
+  // Submit Post (FIXED)
   // =========================
   submitPostBtn.onclick = async () => {
     const content = postTextArea.value.trim();
@@ -123,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (uploadedFile) {
         const formData = new FormData();
         formData.append("content", content);
-        formData.append("media", uploadedFile);
+        formData.append("media", uploadedFile); // Must match server multer
         fetchOptions = { method: "POST", body: formData };
         console.log("Uploading file:", uploadedFile);
       } else {
@@ -142,15 +140,14 @@ document.addEventListener("DOMContentLoaded", () => {
         showAlert("Post created!", () => {
           postModal.style.display = "none";
           postTextArea.value = "";
-          uploadedFile = null;
-          fileUploadInput.value = "";
-          filePreview.innerHTML = "";
+          clearFilePreview();
           loadFeed();
         });
       } else {
-        showAlert("Failed to post.");
+        showAlert(data.error || "Failed to post.");
       }
-    } catch {
+    } catch (err) {
+      console.error("Post error:", err);
       showAlert("Server error on post.");
     }
   };
@@ -270,10 +267,10 @@ document.addEventListener("DOMContentLoaded", () => {
   loadFeed();
 
   // =========================
-  // Extra: Media upload preview logic (duplicate for safety)
+  // Extra: Media upload preview logic (no Firebase keys)
   // =========================
-  const postUploadInput = document.getElementById("file-upload"); 
-  const postFilePreview = document.getElementById("file-preview"); 
+  const postUploadInput = document.getElementById("file-upload"); // already exists
+  const postFilePreview = document.getElementById("file-preview"); // already exists
   let postUploadedFile = null;
 
   postUploadInput.addEventListener("change", () => {
