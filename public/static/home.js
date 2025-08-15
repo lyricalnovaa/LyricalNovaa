@@ -120,6 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
         body = new FormData();
         body.append("content", content);
         body.append("media", uploadedFile);
+        console.log('Uploading file:', uploadedFile);
         fetchOptions = {
           method: "POST",
           body,
