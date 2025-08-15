@@ -16,20 +16,13 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  menuBtn.onclick = () => {
-    menu.classList.toggle("hidden");
-  };
+  menuBtn.onclick = () => menu.classList.toggle("hidden");
 
   logoutBtn.onclick = async () => {
     try {
       const res = await fetch("/api/logout", { method: "POST" });
-      if (res.ok) {
-        showAlert("Logged out! Redirecting to login...", () => {
-          window.location.href = "/login";
-        });
-      } else {
-        showAlert("Logout failed.");
-      }
+      if (res.ok) showAlert("Logged out! Redirecting to login...", () => window.location.href = "/login");
+      else showAlert("Logout failed.");
     } catch {
       showAlert("Server error on logout.");
     }
@@ -50,14 +43,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   fetch("/api/current-user")
     .then(res => res.json())
-    .then(data => {
-      if (data?.artistID) {
-        loggedInUserEl.textContent = "@" + data.artistID;
-      }
-    })
-    .catch(() => {
-      loggedInUserEl.textContent = "@unknown";
-    });
+    .then(data => { if (data?.artistID) loggedInUserEl.textContent = "@" + data.artistID; })
+    .catch(() => { loggedInUserEl.textContent = "@unknown"; });
 
   createPostBtn.onclick = () => {
     postModal.style.display = "flex";
@@ -101,8 +88,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function clearFilePreview() {
     filePreview.innerHTML = "";
-    uploadedFile = null;
     fileUploadInput.value = "";
+    uploadedFile = null;
   }
 
   // =========================
@@ -117,11 +104,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       let fetchOptions;
-
       if (uploadedFile) {
         const formData = new FormData();
         formData.append("content", content);
-        formData.append("media", uploadedFile);
+        formData.append("media", uploadedFile); // MUST match Multer key
         fetchOptions = { method: "POST", body: formData };
       } else {
         fetchOptions = {
@@ -143,66 +129,14 @@ document.addEventListener("DOMContentLoaded", () => {
           loadFeed();
         });
       } else {
-        showAlert(data.error || "Failed to post.");
+        showAlert(data.error || "Failed to post. Check console for details.");
+        console.error("Server rejected post:", data);
       }
     } catch (err) {
       console.error("Post error:", err);
-      showAlert("Server error on post.");
+      showAlert("Server error on post. Check console.");
     }
   };
-
-  // =========================
-  // Inline Post Box Logic
-  // =========================
-  const postInput = document.getElementById("post-input");
-  const submitPostBtnInline = document.getElementById("submit-post-inline");
-  const loggedInUserInline = document.getElementById("logged-in-user-inline");
-
-  fetch("/api/current-user")
-    .then(res => res.json())
-    .then(data => {
-      if (data?.artistID && loggedInUserInline) {
-        loggedInUserInline.textContent = "@" + data.artistID;
-      }
-    })
-    .catch(() => {
-      if (loggedInUserInline) loggedInUserInline.textContent = "@unknown";
-    });
-
-  if (submitPostBtnInline) submitPostBtnInline.disabled = true;
-
-  if (postInput && submitPostBtnInline) {
-    postInput.addEventListener("input", () => {
-      submitPostBtnInline.disabled = postInput.value.trim() === "";
-    });
-
-    submitPostBtnInline.addEventListener("click", async () => {
-      const content = postInput.value.trim();
-      if (!content) {
-        alert("Post content cannot be empty.");
-        return;
-      }
-
-      try {
-        const res = await fetch("/api/post", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content }),
-        });
-
-        if (res.ok) {
-          alert("Post created!");
-          postInput.value = "";
-          submitPostBtnInline.disabled = true;
-          loadFeed();
-        } else {
-          alert("Failed to post.");
-        }
-      } catch {
-        alert("Server error on post.");
-      }
-    });
-  }
 
   // =========================
   // Feed loading
@@ -225,27 +159,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let mediaHTML = "";
         if (post.mediaPath) {
-          if (post.mediaType === "image") {
-            mediaHTML = `<img src="${post.mediaPath}" alt="Post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />`;
-          } else if (post.mediaType === "video") {
-            mediaHTML = `<video controls style="max-width:100%; border-radius:8px; margin-top:8px;">
-                           <source src="${post.mediaPath}" type="video/mp4" />
-                         </video>`;
-          }
+          if (post.mediaType === "image") mediaHTML = `<img src="${post.mediaPath}" alt="Post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />`;
+          else if (post.mediaType === "video") mediaHTML = `<video controls style="max-width:100%; border-radius:8px; margin-top:8px;"><source src="${post.mediaPath}" type="video/mp4" /></video>`;
         }
 
         postEl.innerHTML = `
-          <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom: 6px;">
+          <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
             <img src="${post.profilePhotoPath || '/static/default-pfp.png'}" alt="Profile Picture" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" />
             <a href="/profile/${post.artistName}" style="color:#06f; font-weight:bold; text-decoration:none;">${post.artistName || post.artistID}</a>
           </div>
-          <div class="post-content" style="color:#eee; margin-bottom: 12px;">${post.content || ''}</div>
+          <div class="post-content" style="color:#eee; margin-bottom:12px;">${post.content || ''}</div>
           ${mediaHTML}
         `;
 
         feedContainer.appendChild(postEl);
       });
-    } catch {
+    } catch (err) {
+      console.error("Load feed error:", err);
       feedContainer.textContent = "Failed to load feed.";
     }
   }
