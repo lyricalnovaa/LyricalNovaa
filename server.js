@@ -388,21 +388,36 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
   let mediaURL = null;
   let mediaType = null;
 
+  console.log('Received post request. File:', req.file);
+
   try {
     if (req.file) {
-      const fileName = `posts/${Date.now()}-${req.file.originalname}`;
+      const timestamp = Date.now();
+      const fileName = `posts/${timestamp}-${req.file.originalname}`;
       const file = req.file;
 
+      if (!file.buffer) {
+        console.error('No file buffer found. Multer may not have received the file.');
+        return res.status(400).json({ error: 'File upload failed' });
+      }
+
       const fileUpload = bucket.file(fileName);
-      await fileUpload.save(file.buffer, {
-        metadata: { contentType: file.mimetype },
-        public: true,
-      });
 
-      await fileUpload.makePublic();
+      try {
+        await fileUpload.save(file.buffer, {
+          metadata: { contentType: file.mimetype },
+          public: true,
+        });
 
-      mediaURL = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-      mediaType = file.mimetype.startsWith('image/') ? 'image' : 'video';
+        await fileUpload.makePublic();
+        mediaURL = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        mediaType = file.mimetype.startsWith('image/') ? 'image' : 'video';
+
+        console.log('File uploaded successfully:', mediaURL);
+      } catch (uploadErr) {
+        console.error('Firebase Storage upload failed:', uploadErr);
+        return res.status(500).json({ error: 'Failed to upload media' });
+      }
     }
 
     const postDoc = await db.collection('posts').add({
@@ -413,9 +428,11 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
       createdAt: new Date().toISOString(),
     });
 
+    console.log('Post created with ID:', postDoc.id, 'mediaURL:', mediaURL);
+
     res.json({ message: 'Post created', postId: postDoc.id });
   } catch (error) {
-    console.error('Error uploading post media:', error);
+    console.error('Error creating post:', error);
     res.status(500).json({ error: 'Failed to create post' });
   }
 });
