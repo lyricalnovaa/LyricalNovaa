@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================
-  // Submit Post
+  // Submit Post (Base64 storage)
   // =========================
   submitPostBtn.onclick = async () => {
     const content = postTextArea.value.trim();
@@ -103,24 +103,42 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      let fetchOptions;
       if (uploadedFile) {
-        const formData = new FormData();
-        formData.append("content", content);
-        formData.append("media", uploadedFile); // MUST match Multer key
-        fetchOptions = { method: "POST", body: formData };
-      } else {
-        fetchOptions = {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content }),
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64Media = reader.result; // Full data URI
+          const mediaType = uploadedFile.type.startsWith("image") ? "image" :
+                            uploadedFile.type.startsWith("video") ? "video" : null;
+
+          const res = await fetch("/api/post", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content, media: base64Media, mediaType })
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+            showAlert("Post created!", () => {
+              postModal.style.display = "none";
+              postTextArea.value = "";
+              clearFilePreview();
+              loadFeed();
+            });
+          } else {
+            showAlert(data.error || "Failed to post. Check console for details.");
+          }
         };
+        reader.readAsDataURL(uploadedFile);
+        return; // Prevent running the "no file" branch
       }
 
-      const res = await fetch("/api/post", fetchOptions);
+      // No file, just text
+      const res = await fetch("/api/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+      });
       const data = await res.json();
-      console.log("Post response:", data);
-
       if (res.ok) {
         showAlert("Post created!", () => {
           postModal.style.display = "none";
@@ -130,7 +148,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       } else {
         showAlert(data.error || "Failed to post. Check console for details.");
-        console.error("Server rejected post:", data);
       }
     } catch (err) {
       console.error("Post error:", err);
@@ -158,9 +175,11 @@ document.addEventListener("DOMContentLoaded", () => {
         postEl.className = "post";
 
         let mediaHTML = "";
-        if (post.mediaPath) {
-          if (post.mediaType === "image") mediaHTML = `<img src="${post.mediaPath}" alt="Post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />`;
-          else if (post.mediaType === "video") mediaHTML = `<video controls style="max-width:100%; border-radius:8px; margin-top:8px;"><source src="${post.mediaPath}" type="video/mp4" /></video>`;
+        if (post.media) {
+          if (post.mediaType === "image")
+            mediaHTML = `<img src="${post.media}" alt="Post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />`;
+          else if (post.mediaType === "video")
+            mediaHTML = `<video controls style="max-width:100%; border-radius:8px; margin-top:8px;"><source src="${post.media}" type="video/mp4" /></video>`;
         }
 
         postEl.innerHTML = `
