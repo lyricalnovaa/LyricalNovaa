@@ -114,23 +114,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       let body;
-      let headers;
+      let formOptions;
 
       if (uploadedFile) {
         body = new FormData();
         body.append("content", content);
         body.append("media", uploadedFile);
-        headers = {};
+        fetchOptions = {
+          method: "POST",
+          body,
+        };
       } else {
         body = JSON.stringify({ content });
-        headers = { "Content-Type": "application/json" };
+        fetchOptions = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        };
       }
 
-      const res = await fetch("/api/post", {
-        method: "POST",
-        headers,
-        body,
-      });
+      const res = await fetch("/api/post", fetchOptions);
 
       if (res.ok) {
         showAlert("Post created!", () => {
