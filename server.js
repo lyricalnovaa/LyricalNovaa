@@ -388,18 +388,26 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
   let mediaURL = null;
   let mediaType = null;
 
-  console.log('Received post request. File:', req.file);
+  console.log('Received post request. File info:', req.file);
+
   try {
-    if (req.file && req.file.buffer) {
+    if (req.file) {
+      if (!req.file.buffer) {
+        console.error('No file buffer detected. Check that the request is multipart/form-data and has a file field named "media".');
+        return res.status(400).json({ error: 'File upload failed' });
+      }
+
       const timestamp = Date.now();
       const fileName = `posts/${timestamp}-${req.file.originalname}`;
       const fileUpload = bucket.file(fileName);
 
+      // Save file to Firebase Storage
       await fileUpload.save(req.file.buffer, {
         metadata: { contentType: req.file.mimetype },
       });
 
       await fileUpload.makePublic();
+
       mediaURL = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
       mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
 
