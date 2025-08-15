@@ -380,6 +380,7 @@ app.post('/api/vote', (req, res, next) => {
   }
 });
 
+// POST creation route with media upload to Firebase Storage
 app.post('/api/post', postUpload.single('media'), async (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -391,25 +392,17 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
     if (req.file) {
       const timestamp = Date.now();
       const fileName = `posts/${timestamp}-${req.file.originalname}`;
+      const file = req.file;
+
+      if (!file.buffer) return res.status(400).json({ error: 'File upload failed' });
+
       const fileUpload = bucket.file(fileName);
 
-      // Save the file to Firebase Storage
-      await fileUpload.save(req.file.buffer, {
-        metadata: { contentType: req.file.mimetype },
-        resumable: false
-      });
-
-      // Make it public
-      try {
-        await fileUpload.makePublic();
-      } catch (err) {
-        console.error('Firebase makePublic error:', err);
-      }
+      await fileUpload.save(file.buffer, { metadata: { contentType: file.mimetype } });
+      await fileUpload.makePublic();
 
       mediaURL = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-      mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
-
-      console.log('Uploaded media URL:', mediaURL);
+      mediaType = file.mimetype.startsWith('image/') ? 'image' : 'video';
     }
 
     const postDoc = await db.collection('posts').add({
@@ -425,15 +418,15 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
       postId: postDoc.id,
       mediaPath: mediaURL,
       mediaType,
-      content
+      content,
     });
   } catch (error) {
-    console.error('Post creation failed:', error);
+    console.error('Error creating post:', error);
     res.status(500).json({ error: 'Failed to create post' });
   }
 });
 
-// Fetch posts with user info and like/comment counts
+// Fetch posts with media + likes + comments
 app.get('/api/posts', async (req, res) => {
   try {
     const snapshot = await db.collection('posts')
@@ -445,15 +438,18 @@ app.get('/api/posts', async (req, res) => {
       const post = doc.data();
       post.id = doc.id;
 
+      // Add artist info
       const userDoc = await db.collection('users').doc(post.artistID).get();
       if (userDoc.exists) {
         post.artistName = userDoc.data().artistName;
         post.profilePhotoPath = userDoc.data().profilePhotoPath;
       }
 
+      // Likes
       const likesSnap = await db.collection('likes').where('postID', '==', post.id).get();
       post.likeCount = likesSnap.size;
 
+      // Comments
       const commentsSnap = await db.collection('comments').where('postID', '==', post.id).get();
       post.commentCount = commentsSnap.size;
 
