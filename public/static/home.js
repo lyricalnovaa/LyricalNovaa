@@ -105,6 +105,9 @@ document.addEventListener("DOMContentLoaded", () => {
     fileUploadInput.value = "";
   }
 
+  // =========================
+  // Submit Post (Fixed for file upload)
+  // =========================
   submitPostBtn.onclick = async () => {
     const content = postTextArea.value.trim();
     if (!content && !uploadedFile) {
@@ -113,24 +116,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      let body;
-      let formOptions;
+      let fetchOptions;
 
       if (uploadedFile) {
-        body = new FormData();
-        body.append("content", content);
-        body.append("media", uploadedFile);
-        console.log('Uploading file:', uploadedFile);
-        fetchOptions = {
-          method: "POST",
-          body,
-        };
+        const formData = new FormData();
+        formData.append("content", content);
+        formData.append("media", uploadedFile); // match multer .single('media')
+        fetchOptions = { method: "POST", body: formData };
+        console.log("Uploading file:", uploadedFile);
       } else {
-        body = JSON.stringify({ content });
         fetchOptions = {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body,
+          body: JSON.stringify({ content }),
         };
       }
 
@@ -140,7 +138,9 @@ document.addEventListener("DOMContentLoaded", () => {
         showAlert("Post created!", () => {
           postModal.style.display = "none";
           postTextArea.value = "";
-          clearFilePreview();
+          uploadedFile = null;
+          fileUploadInput.value = "";
+          filePreview.innerHTML = "";
           loadFeed();
         });
       } else {
