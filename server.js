@@ -4,9 +4,8 @@ const session = require('express-session');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-const AWS = require('aws-sdk');
-
 const admin = require('firebase-admin');
+
 const app = express();
 
 // =========================
@@ -15,40 +14,15 @@ const app = express();
 const firebaseConfig = JSON.parse(Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString('utf8'));
 admin.initializeApp({
   credential: admin.credential.cert(firebaseConfig),
-  storageBucket: firebaseConfig.project_id + ".appspot.com"
 });
 const db = admin.firestore();
-const bucket = admin.storage().bucket(); // default bucket
-
-// =========================
-// Configure AWS S3
-// =========================
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION || 'us-east-2',
-});
-const S3_BUCKET = process.env.S3_BUCKET_NAME || 'awsdatabase3';
 
 // =========================
 // Multer Configs
 // =========================
-const profilePhotoUpload = multer({
-  dest: path.join(__dirname, 'uploads/'),
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) return cb(new Error('Only image files allowed'));
-    cb(null, true);
-  },
-});
-
-const postUpload = multer({
+const memoryUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) cb(null, true);
-    else cb(new Error('Only image/video files allowed'));
-  },
 });
 
 // =========================
@@ -62,11 +36,15 @@ function generateArtistID() {
   return Math.floor(10000000 + Math.random() * 90000000).toString();
 }
 
+function bufferToBase64(buffer, mimetype) {
+  return `data:${mimetype};base64,${buffer.toString('base64')}`;
+}
+
 // =========================
 // Express Middleware
 // =========================
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(session({
   secret: 'super-secret-key',
   resave: false,
@@ -74,14 +52,10 @@ app.use(session({
 }));
 
 app.use('/static', express.static(path.join(__dirname, 'public/static')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/logo.png', express.static(path.join(__dirname, 'public/static/logo.png')));
 
 // =========================
-// ROUTES
+// ROUTES: Pages
 // =========================
-
-// Home/Login/Pages
 app.get('/', (req, res) => {
   if (req.session.artistID) {
     if (req.session.userRole === 'admin') return res.redirect('/admin-dashboard');
@@ -108,52 +82,6 @@ app.get('/profile', (req, res) => {
 app.get('/event', (req, res) => {
   if (!req.session.artistID) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'event.html'));
-});
-
-// =========================
-// API: Profile
-// =========================
-app.get('/api/profile', async (req, res) => {
-  const artistID = req.session.artistID;
-  if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
-
-  try {
-    const userDoc = await db.collection('users').doc(artistID).get();
-    if (!userDoc.exists) return res.status(404).json({ error: 'User not found' });
-
-    const userData = userDoc.data();
-    res.json({
-      artistID: userData.artistID,
-      artistName: userData.artistName,
-      profilePhotoPath: userData.profilePhotoPath,
-      bio: userData.bio,
-      musicType: userData.musicType,
-      email: userData.email,
-      role: userData.role,
-    });
-  } catch (err) {
-    console.error('Error fetching profile:', err);
-    res.status(500).json({ error: 'Failed to fetch profile' });
-  }
-});
-
-app.put('/api/profile', async (req, res) => {
-  const { profilePhotoPath, bio, musicType } = req.body;
-  const artistID = req.session.artistID;
-
-  if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
-
-  try {
-    const userRef = db.collection('users').doc(artistID);
-    await userRef.set(
-      { profilePhotoPath, bio, musicType },
-      { merge: true }
-    );
-    res.json({ success: true });
-  } catch (firestoreErr) {
-    console.error('Firestore update error:', firestoreErr);
-    res.status(500).json({ error: 'Failed to update profile' });
-  }
 });
 
 // =========================
@@ -231,11 +159,13 @@ app.post('/api/generate-otp', async (req, res) => {
   }
 });
 
-app.post('/api/create-account', profilePhotoUpload.single('profilePhoto'), async (req, res) => {
+// =========================
+// API: Create Account
+// =========================
+app.post('/api/create-account', memoryUpload.single('profilePhoto'), async (req, res) => {
   try {
     const { artistName, email, role, bio = '', musicType, password } = req.body;
     if (!artistName || !email || !role || !password || !musicType) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -243,13 +173,11 @@ app.post('/api/create-account', profilePhotoUpload.single('profilePhoto'), async
     const userDoc = await db.collection('users').doc(artistID).get();
     const emailQuery = await db.collection('users').where('email', '==', email).get();
 
-    if (userDoc.exists || !emailQuery.empty) {
-      if (req.file) fs.unlinkSync(req.file.path);
-      return res.status(500).json({ error: 'User exists or invalid' });
-    }
+    if (userDoc.exists || !emailQuery.empty) return res.status(500).json({ error: 'User exists or invalid' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const profilePhotoPath = req.file ? `/uploads/${req.file.filename}` : '/static/default-pfp.png';
+    let profilePhotoBase64 = '/static/default-pfp.png';
+    if (req.file) profilePhotoBase64 = bufferToBase64(req.file.buffer, req.file.mimetype);
 
     await db.collection('users').doc(artistID).set({
       artistID,
@@ -259,13 +187,13 @@ app.post('/api/create-account', profilePhotoUpload.single('profilePhoto'), async
       role,
       bio,
       musicType,
-      profilePhotoPath,
+      profilePhotoPath: profilePhotoBase64,
       createdAt: new Date().toISOString(),
     });
 
     res.json({ message: 'Account created successfully', artistID });
   } catch (error) {
-    if (req.file) fs.unlinkSync(req.file.path);
+    console.error(error);
     res.status(500).json({ error: 'Server error occurred' });
   }
 });
@@ -275,36 +203,66 @@ app.post('/api/logout', (req, res) => {
 });
 
 // =========================
-// API: Create Post (S3 upload)
+// API: Profile
 // =========================
-app.post('/api/post', postUpload.single('media'), async (req, res) => {
+app.get('/api/profile', async (req, res) => {
+  const artistID = req.session.artistID;
+  if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
+
+  try {
+    const userDoc = await db.collection('users').doc(artistID).get();
+    if (!userDoc.exists) return res.status(404).json({ error: 'User not found' });
+
+    const userData = userDoc.data();
+    res.json({
+      artistID: userData.artistID,
+      artistName: userData.artistName,
+      profilePhotoPath: userData.profilePhotoPath,
+      bio: userData.bio,
+      musicType: userData.musicType,
+      email: userData.email,
+      role: userData.role,
+    });
+  } catch (err) {
+    console.error('Error fetching profile:', err);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+app.put('/api/profile', async (req, res) => {
+  const { profilePhotoPath, bio, musicType } = req.body;
+  const artistID = req.session.artistID;
+  if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
+
+  try {
+    await db.collection('users').doc(artistID).set({ profilePhotoPath, bio, musicType }, { merge: true });
+    res.json({ success: true });
+  } catch (firestoreErr) {
+    console.error('Firestore update error:', firestoreErr);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// =========================
+// API: Create Post
+// =========================
+app.post('/api/post', memoryUpload.single('media'), async (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
 
   const content = req.body.content || '';
-  let mediaURL = null;
+  let mediaBase64 = null;
   let mediaType = null;
 
   try {
     if (req.file) {
-      const timestamp = Date.now();
-      const fileName = `posts/${timestamp}-${req.file.originalname}`;
-      const params = {
-        Bucket: S3_BUCKET,
-        Key: fileName,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype,
-        ACL: 'public-read',
-      };
-
-      const uploadResult = await s3.upload(params).promise();
-      mediaURL = uploadResult.Location;
+      mediaBase64 = bufferToBase64(req.file.buffer, req.file.mimetype);
       mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
     }
 
     const postDoc = await db.collection('posts').add({
       artistID: req.session.artistID,
       content,
-      mediaPath: mediaURL,
+      mediaPath: mediaBase64,
       mediaType,
       createdAt: new Date().toISOString(),
     });
@@ -312,7 +270,7 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
     res.json({
       message: 'Post created',
       postId: postDoc.id,
-      mediaPath: mediaURL,
+      mediaPath: mediaBase64,
       mediaType,
       content,
     });
@@ -348,7 +306,6 @@ app.get('/api/posts', async (req, res) => {
       const commentsSnap = await db.collection('comments').where('postID', '==', post.id).get();
       post.commentCount = commentsSnap.size;
 
-      post.mediaPath = post.mediaPath || null;
       return post;
     }));
 
@@ -387,164 +344,6 @@ app.post('/api/like', async (req, res) => {
     }
   } catch {
     res.status(500).json({ error: 'DB error' });
-  }
-});
-
-// =========================
-// API: Comments
-// =========================
-app.post('/api/comment', async (req, res) => {
-  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-  const { postID, comment } = req.body;
-  if (!postID || !comment) return res.status(400).json({ error: 'Missing postID or comment' });
-
-  try {
-    const commentRef = await db.collection('comments').add({
-      postID,
-      artistID: req.session.artistID,
-      comment,
-      createdAt: new Date().toISOString(),
-    });
-    res.json({ message: 'Comment added', commentId: commentRef.id });
-  } catch {
-    res.status(500).json({ error: 'Failed to add comment' });
-  }
-});
-
-app.get('/api/comments/:postID', async (req, res) => {
-  const postID = req.params.postID;
-  try {
-    const snapshot = await db.collection('comments')
-      .where('postID', '==', postID)
-      .orderBy('createdAt', 'asc')
-      .get();
-
-    const comments = await Promise.all(snapshot.docs.map(async doc => {
-      const comment = doc.data();
-      comment.id = doc.id;
-
-      const userDoc = await db.collection('users').doc(comment.artistID).get();
-      if (userDoc.exists) {
-        comment.artistName = userDoc.data().artistName;
-        comment.profilePhotoPath = userDoc.data().profilePhotoPath;
-      }
-
-      return comment;
-    }));
-
-    res.json(comments);
-  } catch {
-    res.status(500).json({ error: 'Failed to fetch comments' });
-  }
-});
-
-// =========================
-// Polls
-// =========================
-app.get('/api/polls', async (req, res) => {
-  try {
-    const snapshot = await db.collection('polls').get();
-    const polls = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json(polls);
-  } catch {
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-app.post('/api/polls', (req, res, next) => {
-  if (req.session.userRole !== 'admin') return res.status(403).json({ error: 'Only admins can create polls/events' });
-  next();
-}, multer({ dest: 'uploads/' }).array('songs'), async (req, res) => {
-  try {
-    const { eventName } = req.body;
-    const files = req.files;
-    const names = req.body.names ? JSON.parse(req.body.names) : [];
-
-    if (!eventName || !files || !names || files.length !== names.length) {
-      return res.status(400).json({ error: 'Missing or mismatched poll data' });
-    }
-
-    const batch = db.batch();
-    files.forEach((file, i) => {
-      const pollRef = db.collection('polls').doc();
-      batch.set(pollRef, {
-        eventName,
-        songName: names[i],
-        songPath: `/uploads/${file.filename}`,
-        votes: 0,
-      });
-    });
-    await batch.commit();
-
-    res.json({ message: 'Poll created' });
-  } catch {
-    res.status(500).json({ error: 'DB error on poll creation' });
-  }
-});
-
-app.delete('/api/polls/:id', async (req, res) => {
-  if (req.session.userRole !== 'admin') return res.status(403).json({ error: 'Only admins can delete polls/events' });
-  const pollId = req.params.id;
-  try {
-    const pollRef = db.collection('polls').doc(pollId);
-    await pollRef.delete();
-    res.json({ message: 'Poll/event deleted successfully' });
-  } catch {
-    res.status(500).json({ error: 'Failed to delete poll/event' });
-  }
-});
-
-app.post('/api/vote', (req, res, next) => {
-  if (req.session.userRole === 'admin') return res.status(403).json({ error: 'Admins cannot vote' });
-  next();
-}, async (req, res) => {
-  const { pollId } = req.body;
-  if (!pollId) return res.status(400).json({ error: 'Missing poll ID' });
-  try {
-    const pollRef = db.collection('polls').doc(pollId);
-    await db.runTransaction(async (t) => {
-      const doc = await t.get(pollRef);
-      if (!doc.exists) throw 'Poll not found';
-      const newVotes = (doc.data().votes || 0) + 1;
-      t.update(pollRef, { votes: newVotes });
-    });
-    res.json({ message: 'Vote counted' });
-  } catch {
-    res.status(500).json({ error: 'Vote failed' });
-  }
-});
-
-// =========================
-// API: Fetch profile by username
-// =========================
-app.get('/api/profile/:username', async (req, res) => {
-  const usernameRaw = req.params.username;
-  const username = usernameRaw.replace(/^@/, '').trim();
-
-  console.log('Fetching profile for:', username);
-
-  try {
-    const usersRef = db.collection('users');
-    const snapshot = await usersRef.where('artistName', '==', username).limit(1).get();
-
-    if (snapshot.empty) {
-      console.log('No user found for:', username);
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const userDoc = snapshot.docs[0];
-    const userData = userDoc.data();
-
-    res.json({
-      artistName: userData.artistName,
-      profilePhotoPath: userData.profilePhotoPath,
-      bio: userData.bio,
-      musicType: userData.musicType,
-      role: userData.role,
-    });
-  } catch (err) {
-    console.error('Error fetching user by username:', err);
-    res.status(500).json({ error: 'Server error' });
   }
 });
 
