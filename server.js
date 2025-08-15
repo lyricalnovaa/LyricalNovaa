@@ -389,7 +389,6 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
   let mediaType = null;
 
   console.log('Received post request. File:', req.file);
-  console.log('req.file:', req.file);
   try {
     if (req.file) {
       const timestamp = Date.now();
@@ -429,12 +428,21 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
 
     console.log('Post created with ID:', postDoc.id, 'mediaURL:', mediaURL);
 
-    res.json({ message: 'Post created', postId: postDoc.id });
+    // FIXED: include media info in response so frontend can show it immediately
+    res.json({
+      message: 'Post created',
+      postId: postDoc.id,
+      mediaPath: mediaURL,
+      mediaType,
+      content
+    });
   } catch (error) {
     console.error('Error creating post:', error);
     res.status(500).json({ error: 'Failed to create post' });
   }
 });
+
+
 
 // Fetch posts with user info and like/comment counts
 app.get('/api/posts', async (req, res) => {
