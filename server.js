@@ -390,32 +390,20 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
 
   console.log('Received post request. File:', req.file);
   try {
-    if (req.file) {
+    if (req.file && req.file.buffer) {
       const timestamp = Date.now();
       const fileName = `posts/${timestamp}-${req.file.originalname}`;
-      const file = req.file;
-      
-      if (!file.buffer) {
-        console.error('No file buffer found. Multer may not have received the file.');
-        return res.status(400).json({ error: 'File upload failed' });
-      }
-
       const fileUpload = bucket.file(fileName);
 
-      try {
-        await fileUpload.save(file.buffer, {
-          metadata: { contentType: file.mimetype },
-        });
+      await fileUpload.save(req.file.buffer, {
+        metadata: { contentType: req.file.mimetype },
+      });
 
-        await fileUpload.makePublic();
-        mediaURL = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-        mediaType = file.mimetype.startsWith('image/') ? 'image' : 'video';
+      await fileUpload.makePublic();
+      mediaURL = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+      mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
 
-        console.log('File uploaded successfully:', mediaURL);
-      } catch (uploadErr) {
-        console.error('Firebase Storage upload failed:', uploadErr);
-        return res.status(500).json({ error: 'Failed to upload media' });
-      }
+      console.log('File uploaded successfully:', mediaURL);
     }
 
     const postDoc = await db.collection('posts').add({
@@ -428,7 +416,6 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
 
     console.log('Post created with ID:', postDoc.id, 'mediaURL:', mediaURL);
 
-    // FIXED: include media info in response so frontend can show it immediately
     res.json({
       message: 'Post created',
       postId: postDoc.id,
