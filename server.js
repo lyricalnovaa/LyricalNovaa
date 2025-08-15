@@ -380,7 +380,6 @@ app.post('/api/vote', (req, res, next) => {
   }
 });
 
-// POST creation route with media upload to Firebase Storage
 app.post('/api/post', postUpload.single('media'), async (req, res) => {
   if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -388,30 +387,29 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
   let mediaURL = null;
   let mediaType = null;
 
-  console.log('Received post request. File info:', req.file);
-
   try {
     if (req.file) {
-      if (!req.file.buffer) {
-        console.error('No file buffer detected. Check that the request is multipart/form-data and has a file field named "media".');
-        return res.status(400).json({ error: 'File upload failed' });
-      }
-
       const timestamp = Date.now();
       const fileName = `posts/${timestamp}-${req.file.originalname}`;
       const fileUpload = bucket.file(fileName);
 
-      // Save file to Firebase Storage
+      // Save the file to Firebase Storage
       await fileUpload.save(req.file.buffer, {
         metadata: { contentType: req.file.mimetype },
+        resumable: false
       });
 
-      await fileUpload.makePublic();
+      // Make it public
+      try {
+        await fileUpload.makePublic();
+      } catch (err) {
+        console.error('Firebase makePublic error:', err);
+      }
 
       mediaURL = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
       mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
 
-      console.log('File uploaded successfully:', mediaURL);
+      console.log('Uploaded media URL:', mediaURL);
     }
 
     const postDoc = await db.collection('posts').add({
@@ -422,8 +420,6 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
       createdAt: new Date().toISOString(),
     });
 
-    console.log('Post created with ID:', postDoc.id, 'mediaURL:', mediaURL);
-
     res.json({
       message: 'Post created',
       postId: postDoc.id,
@@ -432,12 +428,10 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
       content
     });
   } catch (error) {
-    console.error('Error creating post:', error);
+    console.error('Post creation failed:', error);
     res.status(500).json({ error: 'Failed to create post' });
   }
 });
-
-
 
 // Fetch posts with user info and like/comment counts
 app.get('/api/posts', async (req, res) => {
