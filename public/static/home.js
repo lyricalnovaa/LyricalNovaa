@@ -82,6 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
       reader.onload = e => {
         const img = document.createElement("img");
         img.src = e.target.result;
+        img.style.maxWidth = "100%";
         filePreview.appendChild(img);
       };
     } else if (file.type.startsWith("video/")) {
@@ -89,6 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const video = document.createElement("video");
         video.src = e.target.result;
         video.controls = true;
+        video.style.maxWidth = "100%";
         filePreview.appendChild(video);
       };
     } else {
@@ -121,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (uploadedFile) {
         const formData = new FormData();
         formData.append("content", content);
-        formData.append("media", uploadedFile); // match multer .single('media')
+        formData.append("media", uploadedFile);
         fetchOptions = { method: "POST", body: formData };
         console.log("Uploading file:", uploadedFile);
       } else {
@@ -134,8 +136,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const res = await fetch("/api/post", fetchOptions);
       const data = await res.json();
-      console.log('Post response:', data)
-      
+      console.log("Post response:", data);
+
       if (res.ok) {
         showAlert("Post created!", () => {
           postModal.style.display = "none";
@@ -268,10 +270,10 @@ document.addEventListener("DOMContentLoaded", () => {
   loadFeed();
 
   // =========================
-  // Extra: Media upload preview logic (no Firebase keys)
+  // Extra: Media upload preview logic (duplicate for safety)
   // =========================
-  const postUploadInput = document.getElementById("file-upload"); // already exists
-  const postFilePreview = document.getElementById("file-preview"); // already exists
+  const postUploadInput = document.getElementById("file-upload"); 
+  const postFilePreview = document.getElementById("file-preview"); 
   let postUploadedFile = null;
 
   postUploadInput.addEventListener("change", () => {
