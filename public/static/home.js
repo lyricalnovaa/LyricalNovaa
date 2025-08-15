@@ -133,7 +133,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const res = await fetch("/api/post", fetchOptions);
-
+      const data = await res.json();
+      console.log('Post response:', data)
+      
       if (res.ok) {
         showAlert("Post created!", () => {
           postModal.style.display = "none";
