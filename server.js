@@ -389,13 +389,13 @@ app.post('/api/post', postUpload.single('media'), async (req, res) => {
   let mediaType = null;
 
   console.log('Received post request. File:', req.file);
-
+  console.log('req.file:', req.file);
   try {
     if (req.file) {
       const timestamp = Date.now();
       const fileName = `posts/${timestamp}-${req.file.originalname}`;
       const file = req.file;
-
+      
       if (!file.buffer) {
         console.error('No file buffer found. Multer may not have received the file.');
         return res.status(400).json({ error: 'File upload failed' });
