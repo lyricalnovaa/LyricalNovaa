@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (uploadedFile) {
         body = new FormData();
         body.append("content", content);
-        body.append("file", uploadedFile);
+        body.append("media", uploadedFile);
         headers = {};
       } else {
         body = JSON.stringify({ content });
