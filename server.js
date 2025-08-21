@@ -346,7 +346,10 @@ app.post('/api/like', async (req, res) => {
     res.status(500).json({ error: 'DB error' });
   }
 });
-
+app.get('/profile/:username', (req, res) => {
+  if (!req.session.artistID) return res.redirect('/login');
+  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+});
 // =========================
 // Server start
 // =========================
