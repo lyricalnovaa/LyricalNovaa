@@ -206,11 +206,29 @@ app.post('/api/logout', (req, res) => {
 // API: Profile
 // =========================
 
-app.get('/profile/:username', (req, res) => {
-  if (!req.session.artistID) return res.redirect('/login');
-  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
-});
+app.get('/api/user/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    const snapshot = await db.collection('users')
+      .where('artistName', '==', username)
+      .limit(1)
+      .get();
 
+    if (snapshot.empty) return res.status(404).json({ error: 'User not found' });
+
+    const user = snapshot.docs[0].data();
+    res.json({
+      artistID: user.artistID,
+      artistName: user.artistName,
+      bio: user.bio,
+      musicType: user.musicType,
+      profilePhotoPath: user.profilePhotoPath,
+    });
+  } catch (err) {
+    console.error('Profile fetch error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 app.get('/api/profile', async (req, res) => {
   const artistID = req.session.artistID;
   if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
