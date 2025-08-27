@@ -225,7 +225,7 @@ app.get('/api/user/:username', async (req, res) => {
       profilePhotoPath: user.profilePhotoPath,
     });
   } catch (err) {
-    console.error('Profile fetch error:', err);
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
