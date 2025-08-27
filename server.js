@@ -75,6 +75,11 @@ app.get('/home', (req, res) => {
   if (!req.session.artistID) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
+// View someone else's profile
+app.get('/profile/:username', (req, res) => {
+  if (!req.session.artistID) return res.redirect('/login');
+  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+});
 app.get('/profile', (req, res) => {
   if (!req.session.artistID) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
