@@ -205,6 +205,12 @@ app.post('/api/logout', (req, res) => {
 // =========================
 // API: Profile
 // =========================
+
+app.get('/profile/:username', (req, res) => {
+  if (!req.session.artistID) return res.redirect('/login');
+  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+});
+
 app.get('/api/profile', async (req, res) => {
   const artistID = req.session.artistID;
   if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
@@ -346,10 +352,7 @@ app.post('/api/like', async (req, res) => {
     res.status(500).json({ error: 'DB error' });
   }
 });
-app.get('/profile/:username', (req, res) => {
-  if (!req.session.artistID) return res.redirect('/login');
-  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
-});
+
 // =========================
 // Server start
 // =========================
