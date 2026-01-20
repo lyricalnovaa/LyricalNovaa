@@ -276,35 +276,48 @@ app.put('/api/profile', async (req, res) => {
 // API: Create Post
 // =========================
 app.post('/api/post', memoryUpload.single('media'), async (req, res) => {
-  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-
-  const content = req.body.content || '';
-  let mediaBase64 = null;
-  let mediaType = null;
+  if (!req.session.artistID) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   try {
-    if (req.file) {
-      mediaBase64 = bufferToBase64(req.file.buffer, req.file.mimetype);
-      mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
+    const userDoc = await db.collection('users').doc(req.session.artistID).get();
+    if (!userDoc.exists) {
+      return res.status(403).json({ error: 'User not found' });
     }
 
-    const postDoc = await db.collection('posts').add({
+    const user = userDoc.data();
+
+    // 🚨 ADMIN ONLY
+    if (user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admins only' });
+    }
+
+    const content = req.body.content || '';
+    let mediaBase64 = null;
+    let mediaType = null;
+
+    if (req.file) {
+      mediaBase64 = bufferToBase64(req.file.buffer, req.file.mimetype);
+      mediaType = req.file.mimetype.startsWith('image/')
+        ? 'image'
+        : req.file.mimetype.startsWith('video/')
+        ? 'video'
+        : null;
+    }
+
+    await db.collection('posts').add({
       artistID: req.session.artistID,
       content,
-      mediaPath: mediaBase64,
+      media: mediaBase64,
       mediaType,
       createdAt: new Date().toISOString(),
+      adminPost: true,
     });
 
-    res.json({
-      message: 'Post created',
-      postId: postDoc.id,
-      mediaPath: mediaBase64,
-      mediaType,
-      content,
-    });
-  } catch (error) {
-    console.error('Error creating post:', error);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to create post' });
   }
 });
