@@ -45,7 +45,18 @@ document.addEventListener("DOMContentLoaded", () => {
     .then(res => res.json())
     .then(data => { if (data?.artistID) loggedInUserEl.textContent = "@" + data.artistID; })
     .catch(() => { loggedInUserEl.textContent = "@unknown"; });
+const createPostBtn = document.getElementById("add-post-btn");
+const postModal = document.getElementById("create-post-modal");
 
+fetch("/api/current-user")
+  .then(res => res.json())
+  .then(user => {
+    if (!user.loggedIn || user.role !== 'admin') {
+      // 🧹 nuke posting UI
+      createPostBtn?.remove();
+      postModal?.remove();
+    }
+  });
   createPostBtn.onclick = () => {
     postModal.style.display = "flex";
     postTextArea.focus();
