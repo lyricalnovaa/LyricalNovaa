@@ -161,9 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!members || !members.length) {
       // fallback sample members
       members = [
-        { name: 'Ava Nova', artistName: 'Ava', role: 'Vocalist', pfp: '/static/default-pfp.png' },
-        { name: 'Kai Storm', artistName: 'Kai', role: 'Producer', pfp: '/static/default-pfp.png' },
-        { name: 'Lumen', artistName: 'Lumen', role: 'Beatmaker', pfp: '/static/default-pfp.png' }
+        { name: 'XANTANX', artistName: 'XANTANX', role: 'Artist', pfp: '/static/XANTANX.png' },
+        { name: 'Mercy', artistName: 'Mercy Official', role: 'Artist', pfp: '/static/Mercy.png' }
       ];
     }
     container.innerHTML = '';
