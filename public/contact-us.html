@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Contact — Lyrical Novaa</title>
+  <style>
+    :root{--bg:#000;--neon:#06f}
+    body{margin:0;background:var(--bg);color:var(--neon);font-family:'Segoe UI',sans-serif}
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px}
+    a{color:var(--neon);text-decoration:none}
+    .container{max-width:700px;margin:36px auto;padding:0 20px}
+    label{display:block;margin-top:12px}
+    input,textarea{width:100%;padding:10px;border-radius:8px;background:#071020;border:1px solid rgba(6,111,255,0.06);color:#cfe9ff}
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex;gap:12px;align-items:center">
+      <a href="/">← Home</a>
+      <div style="font-weight:800">Contact</div>
+    </div>
+    <nav>
+      <a href="/shop" style="margin-right:12px">Shop</a>
+      <a href="/team">Team</a>
+    </nav>
+  </header>
+  <main class="container">
+    <h2 style="color:var(--neon)">Contact Us</h2>
+    <p>If you'd like to work with the label or have questions, send a message below.</p>
+    <form onsubmit="event.preventDefault();alert('Message sent (demo)')">
+      <label>Name</label>
+      <input required />
+      <label>Email</label>
+      <input type="email" required />
+      <label>Message</label>
+      <textarea rows="6" required></textarea>
+      <div style="margin-top:12px"><button style="padding:10px 14px;border-radius:8px;background:linear-gradient(90deg,var(--neon),var(--neon-2));border:none;color:#001;cursor:pointer;font-weight:800">Send</button></div>
+    </form>
+  </main>
+</body>
+</html>
