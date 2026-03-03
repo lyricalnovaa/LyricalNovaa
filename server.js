@@ -69,6 +69,7 @@ app.get('/create-account', (req, res) => res.sendFile(path.join(__dirname, 'publ
 app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reset-password.html')));
 app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'public', 'team.html')));
 app.get('/shop', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shop.html')));
+app.get('/contact-us', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact-us.html')));
 app.get('/admin-dashboard', (req, res) => {
   if (!req.session.artistID || req.session.userRole !== 'admin') return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
