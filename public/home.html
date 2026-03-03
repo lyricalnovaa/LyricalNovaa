@@ -52,11 +52,14 @@
   <header>
     <div id="brand">
       <img id="logo" src="/static/logo.png" alt="Lyrical Novaa Logo">
-      <div id="menu-title">Lyrical Novaa</div>
+      <div id="menu-title">Lyrical Novaa Productions</div>
     </div>
     <nav>
-      <a href="/login">Log in</a>
-      <a href="/create-account" class="primary">Get Started</a>
+      <a id="nav-login" href="/login">Log in</a>
+      <a id="nav-get-started" href="/create-account" class="primary">Get Started</a>
+      <a id="nav-dashboard" href="/profile" style="display:none;">My Dashboard</a>
+      <button id="nav-logout" style="display:none;background:transparent;border:1px solid rgba(6,111,255,0.08);color:var(--neon);padding:8px 10px;border-radius:8px;cursor:pointer;">Logout</button>
+      <a href="#store" style="margin-left:10px;color:var(--neon);text-decoration:none;font-weight:700;padding:8px 12px;border-radius:8px">Store</a>
     </nav>
   </header>
 
@@ -97,6 +100,18 @@
       <h3>Collaborate</h3>
       <p>Team up on polls, live sessions, and creative threads with rich media.</p>
     </div>
+  </section>
+
+  <!-- Label members -->
+  <section id="members" style="max-width:1100px;margin:28px auto;padding:20px 36px;">
+    <h2 style="color:var(--neon);margin:0 0 12px;font-size:1.4rem">Our Artists</h2>
+    <div id="members-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px"></div>
+  </section>
+
+  <!-- Store -->
+  <section id="store" style="max-width:1100px;margin:28px auto;padding:20px 36px;">
+    <h2 style="color:var(--neon);margin:0 0 12px;font-size:1.4rem">Store</h2>
+    <div id="store-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px"></div>
   </section>
 
   <footer>
