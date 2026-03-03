@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shop — Lyrical Novaa</title>
+  <style>
+    :root{--bg:#000;--neon:#06f;--neon-2:#0a7fff}
+    body{margin:0;background:var(--bg);color:var(--neon);font-family:'Segoe UI',sans-serif}
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px}
+    a{color:var(--neon);text-decoration:none}
+    .container{max-width:1100px;margin:36px auto;padding:0 20px}
+    .card{background:rgba(255,255,255,0.02);border:1px solid rgba(6,111,255,0.06);padding:18px;border-radius:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex;gap:12px;align-items:center">
+      <a href="/">← Home</a>
+      <div style="font-weight:800">Shop</div>
+    </div>
+    <nav>
+      <a href="/team" style="margin-right:12px">Team</a>
+      <a href="/contact-us">Contact</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="card">
+      <h2 style="margin-top:0;color:var(--neon)">Store (Placeholder)</h2>
+      <p>Products and beats will appear here. You can add payment integration later (Stripe, PayPal, etc.).</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:12px">
+        <div style="padding:12px;border-radius:10px;background:rgba(10,26,43,0.3)">Beat — $29</div>
+        <div style="padding:12px;border-radius:10px;background:rgba(10,26,43,0.3)">Merch Tee — $24</div>
+        <div style="padding:12px;border-radius:10px;background:rgba(10,26,43,0.3)">Sample Pack — $12</div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
