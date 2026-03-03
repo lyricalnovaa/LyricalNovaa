@@ -1,214 +1,105 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const menuBtn = document.getElementById("menu-btn");
-  const menu = document.getElementById("menu");
-  const logoutBtn = document.getElementById("logout-btn");
-  const alertModal = document.getElementById("alert-modal");
-  const alertText = document.getElementById("alert-text");
-  const alertOk = document.getElementById("alert-ok");
+document.addEventListener('DOMContentLoaded', () => {
+  // Safe getters
+  const header = document.querySelector('header');
+  const exploreBtns = Array.from(document.querySelectorAll('a')).filter(a => /explore/i.test(a.textContent || ''));
+  const featuresSection = document.querySelector('.features');
+  const heroInner = document.querySelector('.hero-inner');
+  const glassImgs = Array.from(document.querySelectorAll('.glass-card img'));
+  const yearEl = document.getElementById('year');
 
-  function showAlert(msg, callback) {
-    alertText.textContent = msg;
-    alertModal.classList.remove("hidden");
-    alertOk.focus();
-    alertOk.onclick = () => {
-      alertModal.classList.add("hidden");
-      if (callback) callback();
-    };
-  }
+  // Set current year
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  menuBtn.onclick = () => menu.classList.toggle("hidden");
-
-  logoutBtn.onclick = async () => {
-    try {
-      const res = await fetch("/api/logout", { method: "POST" });
-      if (res.ok) showAlert("Logged out! Redirecting to login...", () => window.location.href = "/login");
-      else showAlert("Logout failed.");
-    } catch {
-      showAlert("Server error on logout.");
-    }
-  };
-
-  // =========================
-  // Create Post Modal Logic
-  // =========================
-  const createPostBtn = document.getElementById("add-post-btn");
-  const postModal = document.getElementById("create-post-modal");
-  const cancelPostBtn = document.getElementById("cancel-post");
-  const submitPostBtn = document.getElementById("submit-post");
-  const postTextArea = document.getElementById("post-text");
-  const loggedInUserEl = document.getElementById("logged-in-user");
-  const fileUploadInput = document.getElementById("file-upload");
-  const filePreview = document.getElementById("file-preview");
-  let uploadedFile = null;
-
-  fetch("/api/current-user")
-    .then(res => res.json())
-    .then(data => { if (data?.artistID) loggedInUserEl.textContent = "@" + data.artistID; })
-    .catch(() => { loggedInUserEl.textContent = "@unknown"; });
-const createPostBtn = document.getElementById("add-post-btn");
-const postModal = document.getElementById("create-post-modal");
-
-fetch("/api/current-user")
-  .then(res => res.json())
-  .then(user => {
-    if (!user.loggedIn || user.role !== 'admin') {
-      // 🧹 nuke posting UI
-      createPostBtn?.remove();
-      postModal?.remove();
-    }
-  });
-  createPostBtn.onclick = () => {
-    postModal.style.display = "flex";
-    postTextArea.focus();
-  };
-
-  cancelPostBtn.onclick = () => {
-    postModal.style.display = "none";
-    postTextArea.value = "";
-    clearFilePreview();
-  };
-
-  fileUploadInput.addEventListener("change", () => {
-    const file = fileUploadInput.files[0];
-    uploadedFile = file || null;
-    filePreview.innerHTML = "";
-
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = e => {
-      if (file.type.startsWith("image/")) {
-        const img = document.createElement("img");
-        img.src = e.target.result;
-        img.style.maxWidth = "100%";
-        filePreview.appendChild(img);
-      } else if (file.type.startsWith("video/")) {
-        const video = document.createElement("video");
-        video.src = e.target.result;
-        video.controls = true;
-        video.style.maxWidth = "100%";
-        filePreview.appendChild(video);
-      } else {
-        const info = document.createElement("p");
-        info.textContent = `File: ${file.name} (${Math.round(file.size / 1024)} KB)`;
-        filePreview.appendChild(info);
-      }
-    };
-    reader.readAsDataURL(file);
+  // Smooth scroll "Explore" to features section if present
+  exploreBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      if (!featuresSection) return; // fallback to default navigation
+      e.preventDefault();
+      featuresSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   });
 
-  function clearFilePreview() {
-    filePreview.innerHTML = "";
-    fileUploadInput.value = "";
-    uploadedFile = null;
-  }
-
-  // =========================
-  // Submit Post (Base64 storage)
-  // =========================
-  submitPostBtn.onclick = async () => {
-    const content = postTextArea.value.trim();
-    if (!content && !uploadedFile) {
-      showAlert("Post content or a file is required.");
-      return;
+  // Simple entrance animation
+  requestAnimationFrame(() => {
+    if (heroInner) {
+      heroInner.style.opacity = 0;
+      heroInner.style.transform = 'translateY(10px)';
+      heroInner.style.transition = 'opacity 700ms ease, transform 700ms ease';
+      requestAnimationFrame(() => {
+        heroInner.style.opacity = 1;
+        heroInner.style.transform = 'translateY(0)';
+      });
     }
 
-    try {
-      if (uploadedFile) {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64Media = reader.result; // Full data URI
-          const mediaType = uploadedFile.type.startsWith("image") ? "image" :
-                            uploadedFile.type.startsWith("video") ? "video" : null;
+    if (featuresSection) {
+      featuresSection.style.opacity = 0;
+      featuresSection.style.transform = 'translateY(12px)';
+      featuresSection.style.transition = 'opacity 700ms ease 200ms, transform 700ms ease 200ms';
+      requestAnimationFrame(() => {
+        featuresSection.style.opacity = 1;
+        featuresSection.style.transform = 'translateY(0)';
+      });
+    }
+  });
 
-          const res = await fetch("/api/post", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content, media: base64Media, mediaType })
-          });
+  // Small floating animation for images to give a futuristic subtle motion
+  glassImgs.forEach((img, idx) => {
+    img.style.transition = 'transform 1000ms cubic-bezier(.2,.9,.2,1)';
+    let dir = idx % 2 === 0 ? 1 : -1;
+    setInterval(() => {
+      img.style.transform = `translateY(${dir * 6}px)`;
+      dir = -dir;
+    }, 2500 + (idx * 300));
+  });
 
-          const data = await res.json();
-          if (res.ok) {
-            showAlert("Post created!", () => {
-              postModal.style.display = "none";
-              postTextArea.value = "";
-              clearFilePreview();
-              loadFeed();
-            });
-          } else {
-            showAlert(data.error || "Failed to post. Check console for details.");
+  // Placeholder SVG generator (data URL)
+  function placeholderDataURL(label = 'placeholder', w = 600, h = 360) {
+    const bg = '#0a1a2b';
+    const fg = '#06f';
+    const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'><rect width='100%' height='100%' fill='${bg}'/><g fill='${fg}' opacity='0.12'><rect x='0' y='0' width='100%' height='100%'/></g><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Segoe UI, Arial' font-size='20' fill='${fg}' opacity='0.9'>${label}</text></svg>`;
+    return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+  }
+
+  // Ensure hero images have a placeholder in case the real image is missing
+  glassImgs.forEach(img => {
+    if (!img.src) img.src = placeholderDataURL('Art preview', 600, 360);
+    img.onerror = () => { img.src = placeholderDataURL('Placeholder', img.width || 600, img.height || 360); };
+  });
+
+  // Make sure the page doesn't try to run feed/post code when homepage is a landing page
+  // No-op if elements are missing.
+  const feedContainer = document.getElementById('feed');
+  if (feedContainer) {
+    // Keep original feed loader behavior but guarded
+    async function loadFeed() {
+      try {
+        const res = await fetch('/api/posts');
+        if (!res.ok) throw new Error('Failed to fetch posts');
+        const posts = await res.json();
+        feedContainer.innerHTML = '';
+        posts.forEach(post => {
+          const postEl = document.createElement('div');
+          postEl.className = 'post';
+          let mediaHTML = '';
+          if (post.media) {
+            if (post.mediaType === 'image') mediaHTML = `<img src="${post.media}" alt="Post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />`;
+            else if (post.mediaType === 'video') mediaHTML = `<video controls style="max-width:100%; border-radius:8px; margin-top:8px;"><source src="${post.media}" type="video/mp4" /></video>`;
           }
-        };
-        reader.readAsDataURL(uploadedFile);
-        return; // Prevent running the "no file" branch
-      }
-
-      // No file, just text
-      const res = await fetch("/api/post", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showAlert("Post created!", () => {
-          postModal.style.display = "none";
-          postTextArea.value = "";
-          clearFilePreview();
-          loadFeed();
+          postEl.innerHTML = `
+            <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <img src="${post.profilePhotoPath || '/static/default-pfp.png'}" alt="Profile Picture" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" />
+              <a href="/profile/${post.artistName}" style="color:#06f; font-weight:bold; text-decoration:none;">${post.artistName || post.artistID}</a>
+            </div>
+            <div class="post-content" style="color:#eee; margin-bottom:12px;">${post.content || ''}</div>
+            ${mediaHTML}
+          `;
+          feedContainer.appendChild(postEl);
         });
-      } else {
-        showAlert(data.error || "Failed to post. Check console for details.");
+      } catch (err) {
+        console.error('Load feed error:', err);
+        feedContainer.textContent = 'Failed to load feed.';
       }
-    } catch (err) {
-      console.error("Post error:", err);
-      showAlert("Server error on post. Check console.");
     }
-  };
-
-  // =========================
-  // Feed loading
-  // =========================
-  const feedContainer = document.getElementById("feed");
-
-  async function loadFeed() {
-    if (!feedContainer) return;
-
-    try {
-      const res = await fetch("/api/posts");
-      if (!res.ok) throw new Error("Failed to fetch posts");
-      const posts = await res.json();
-
-      feedContainer.innerHTML = "";
-
-      posts.forEach(post => {
-        const postEl = document.createElement("div");
-        postEl.className = "post";
-
-        let mediaHTML = "";
-        if (post.media) {
-          if (post.mediaType === "image")
-            mediaHTML = `<img src="${post.media}" alt="Post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />`;
-          else if (post.mediaType === "video")
-            mediaHTML = `<video controls style="max-width:100%; border-radius:8px; margin-top:8px;"><source src="${post.media}" type="video/mp4" /></video>`;
-        }
-
-        postEl.innerHTML = `
-          <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-            <img src="${post.profilePhotoPath || '/static/default-pfp.png'}" alt="Profile Picture" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" />
-            <a href="/profile/${post.artistName}" style="color:#06f; font-weight:bold; text-decoration:none;">${post.artistName || post.artistID}</a>
-          </div>
-          <div class="post-content" style="color:#eee; margin-bottom:12px;">${post.content || ''}</div>
-          ${mediaHTML}
-        `;
-
-        feedContainer.appendChild(postEl);
-      });
-    } catch (err) {
-      console.error("Load feed error:", err);
-      feedContainer.textContent = "Failed to load feed.";
-    }
+    loadFeed();
   }
-
-  loadFeed();
 });
