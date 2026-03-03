@@ -51,16 +51,30 @@
   <div class="scanline" aria-hidden="true"></div>
   <header>
     <div id="brand">
+      <button id="menu-toggle" aria-label="Open menu" style="background:transparent;border:1px solid rgba(6,111,255,0.08);color:var(--neon);padding:8px;border-radius:8px;cursor:pointer;margin-right:12px;display:none">☰</button>
       <img id="logo" src="/static/logo.png" alt="Lyrical Novaa Logo">
       <div id="menu-title">Lyrical Novaa Productions</div>
     </div>
-    <nav>
+    <nav id="main-nav">
+      <a id="nav-home" href="/">Home</a>
+      <a id="nav-shop" href="/shop">Shop</a>
+      <a id="nav-team" href="/team">Team</a>
+      <a id="nav-contact" href="/contact-us">Contact</a>
       <a id="nav-login" href="/login">Log in</a>
       <a id="nav-get-started" href="/create-account" class="primary">Get Started</a>
       <a id="nav-dashboard" href="/profile" style="display:none;">My Dashboard</a>
       <button id="nav-logout" style="display:none;background:transparent;border:1px solid rgba(6,111,255,0.08);color:var(--neon);padding:8px 10px;border-radius:8px;cursor:pointer;">Logout</button>
-      <a href="#store" style="margin-left:10px;color:var(--neon);text-decoration:none;font-weight:700;padding:8px 12px;border-radius:8px">Store</a>
     </nav>
+    <div id="mobile-menu" class="hidden" style="position:fixed;top:70px;right:16px;background:#000;border:1px solid rgba(6,111,255,0.06);border-radius:10px;padding:12px;box-shadow:0 10px 40px rgba(6,111,255,0.12);z-index:1500;display:none">
+      <a href="/">Home</a><br/>
+      <a href="/shop">Shop</a><br/>
+      <a href="/team">Team</a><br/>
+      <a href="/contact-us">Contact</a><br/>
+      <a id="mobile-login" href="/login">Log in</a><br/>
+      <a id="mobile-get-started" href="/create-account">Get Started</a><br/>
+      <a id="mobile-dashboard" href="/profile" style="display:none">My Dashboard</a><br/>
+      <button id="mobile-logout" style="display:none;background:transparent;border:1px solid rgba(6,111,255,0.08);color:var(--neon);padding:8px;border-radius:8px;cursor:pointer;margin-top:8px;">Logout</button>
+    </div>
   </header>
 
   <main class="hero">
@@ -69,8 +83,8 @@
         <h1>Where Words Become Waves</h1>
         <p>Share creative ideas, collaborate with artists, and discover live micro-moments — all in a neon-lit, fast, and friendly space.</p>
         <div class="cta-row">
-          <a href="/create-account" class="btn btn-primary">Create Account</a>
-          <a href="/home" class="btn btn-ghost">Explore Features</a>
+          <a id="cta-create" href="/create-account" class="btn btn-primary">Create Account</a>
+          <a id="cta-explore" href="#features" class="btn btn-ghost">Explore Features</a>
         </div>
         <div style="margin-top:22px;color:#9fc8ff;font-weight:600">No ads · Real creators · Instant feeds</div>
       </div>
@@ -87,7 +101,7 @@
     </section>
   </main>
 
-  <section class="features">
+  <section id="features" class="features">
     <div class="feature">
       <h3>Instant Sharing</h3>
       <p>Post photos, short clips, or quick thoughts with one tap — optimized for creators.</p>
