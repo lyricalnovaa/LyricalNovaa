@@ -61,12 +61,14 @@ app.get('/', (req, res) => {
     if (req.session.userRole === 'admin') return res.redirect('/admin-dashboard');
     return res.redirect('/home');
   }
-  res.redirect('/login');
+  res.redirect('/home');
 });
 
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/create-account', (req, res) => res.sendFile(path.join(__dirname, 'public', 'create-account.html')));
 app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reset-password.html')));
+app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'public', 'team.html')));
+app.get('/shop', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shop.html')));
 app.get('/admin-dashboard', (req, res) => {
   if (!req.session.artistID || req.session.userRole !== 'admin') return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
