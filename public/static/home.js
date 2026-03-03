@@ -15,6 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const navGetStarted = document.getElementById('nav-get-started');
   const navDashboard = document.getElementById('nav-dashboard');
   const navLogout = document.getElementById('nav-logout');
+  const menuToggle = document.getElementById('menu-toggle');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const mobileLogin = document.getElementById('mobile-login');
+  const mobileGetStarted = document.getElementById('mobile-get-started');
+  const mobileDashboard = document.getElementById('mobile-dashboard');
+  const mobileLogout = document.getElementById('mobile-logout');
+  const ctaCreate = document.getElementById('cta-create');
 
   // Check current user to toggle nav and fetch members
   (async function initUser() {
@@ -22,13 +29,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/current-user');
       if (!res.ok) throw new Error('no user');
       const user = await res.json();
-      if (user && user.loggedIn) {
+      // Accept different shapes: { loggedIn:true } or { artistID: '...' } etc.
+      const isLogged = !!(user && (user.loggedIn || user.artistID || user.userId || user.id || user.email));
+      if (isLogged) {
         // hide signup/login
         if (navLogin) navLogin.style.display = 'none';
         if (navGetStarted) navGetStarted.style.display = 'none';
+        if (mobileLogin) mobileLogin.style.display = 'none';
+        if (mobileGetStarted) mobileGetStarted.style.display = 'none';
         // show dashboard/logout
         if (navDashboard) navDashboard.style.display = '';
         if (navLogout) navLogout.style.display = '';
+        if (mobileDashboard) mobileDashboard.style.display = '';
+        if (mobileLogout) mobileLogout.style.display = '';
+        if (ctaCreate) ctaCreate.style.display = 'none';
       }
     } catch (err) {
       // not logged in; leave default nav
@@ -42,6 +56,40 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok) window.location.reload();
         else window.alert('Logout failed');
       } catch (err) { window.alert('Server error on logout'); }
+    });
+  }
+  if (mobileLogout) {
+    mobileLogout.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/logout', { method: 'POST' });
+        if (res.ok) window.location.reload();
+        else window.alert('Logout failed');
+      } catch (err) { window.alert('Server error on logout'); }
+    });
+  }
+
+  // Mobile menu handling
+  function updateMenuToggleVisibility() {
+    if (!menuToggle) return;
+    if (window.innerWidth < 900) menuToggle.style.display = '';
+    else menuToggle.style.display = 'none';
+  }
+  updateMenuToggleVisibility();
+  window.addEventListener('resize', updateMenuToggleVisibility);
+
+  if (menuToggle && mobileMenu) {
+    menuToggle.addEventListener('click', () => {
+      const open = mobileMenu.style.display !== 'none' && mobileMenu.style.display !== '' ? true : mobileMenu.style.display === '';
+      if (mobileMenu.style.display === 'none' || !mobileMenu.style.display) {
+        mobileMenu.style.display = 'block';
+      } else {
+        mobileMenu.style.display = 'none';
+      }
+    });
+    // close mobile menu on nav click
+    mobileMenu.addEventListener('click', (e) => {
+      const a = e.target.closest('a');
+      if (a) mobileMenu.style.display = 'none';
     });
   }
 
