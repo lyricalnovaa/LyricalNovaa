@@ -3,303 +3,105 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Home - Lyrical Novaa</title>
+  <title>Lyrical Novaa — Connect Creatively</title>
   <style>
-    body {
-      background: #000;
-      color: #06f;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
+    :root{--bg:#000;--neon:#06f;--neon-2:#0a7fff;--glass:rgba(255,255,255,0.03)}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--neon);font-family:'Segoe UI',Tahoma,Helvetica,Arial,sans-serif}
 
-    header {
-      position: sticky;
-      top: 0;
-      display: flex;
-      align-items: center;
-      padding: 1.5rem 2rem;
-      background: #000;
-      box-shadow: 0 0 10px #06f;
-      height: 70px;
-      z-index: 1000;
-      justify-content: space-between;
-    }
+    /* Animated starfield + subtle gradient */
+    body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse at 10% 10%, rgba(6,111,255,0.06), transparent 10%), radial-gradient(ellipse at 90% 80%, rgba(10,127,255,0.04), transparent 12%);pointer-events:none;z-index:0}
+    .scanline{position:fixed;inset:0;background-image:linear-gradient(rgba(6,111,255,0.02) 1px, transparent 1px);background-size:100% 3px;mix-blend-mode:overlay;opacity:0.6;pointer-events:none}
 
-    #menu-btn {
-      font-size: 2.5rem;
-      background: transparent;
-      border: none;
-      color: #06f;
-      cursor: pointer;
-    }
+    header{position:relative;display:flex;align-items:center;justify-content:space-between;padding:20px 36px;z-index:10}
+    #brand{display:flex;align-items:center;gap:14px}
+    #logo{height:44px}
+    #menu-title{font-size:1.35rem;font-weight:800;color:var(--neon);letter-spacing:0.6px}
 
-    #menu-title {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #06f;
-    }
+    nav{display:flex;gap:18px;align-items:center}
+    nav a{color:var(--neon);text-decoration:none;font-weight:700;padding:8px 12px;border-radius:8px}
+    nav a.primary{background:linear-gradient(90deg,var(--neon),var(--neon-2));color:#001;box-shadow:0 6px 30px rgba(6,111,255,0.12)}
 
-    #logo {
-      height: 45px;
-      cursor: pointer;
-    }
+    main.hero{min-height:72vh;display:flex;align-items:center;justify-content:center;position:relative;z-index:5}
+    .hero-inner{max-width:1100px;margin:40px auto;padding:48px;border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(6,111,255,0.12);box-shadow:0 8px 40px rgba(6,111,255,0.06);display:grid;grid-template-columns:1fr 420px;gap:32px;align-items:center}
 
-    nav#menu {
-      position: absolute;
-      top: 70px;
-      left: 16px;
-      background: #000;
-      padding: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 0 15px #06f;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      z-index: 1000;
-    }
+    .hero-copy h1{font-size:clamp(2rem,4vw,3.4rem);margin:0 0 10px;color:var(--neon);text-shadow:0 0 18px rgba(6,111,255,0.18)}
+    .hero-copy p{color:#cfe9ff;opacity:0.9;font-weight:600;margin:0 0 20px}
 
-    nav#menu.hidden {
-      display: none;
-    }
+    .cta-row{display:flex;gap:12px}
+    .btn{padding:12px 18px;border-radius:10px;font-weight:800;border:2px solid transparent;cursor:pointer}
+    .btn-ghost{background:transparent;color:var(--neon);border:1px solid rgba(6,111,255,0.18)}
+    .btn-primary{background:linear-gradient(90deg,var(--neon),var(--neon-2));color:#001;box-shadow:0 10px 30px rgba(6,111,255,0.12)}
 
-    nav#menu a, nav#menu button {
-      color: #06f;
-      text-decoration: none;
-      font-weight: 700;
-      cursor: pointer;
-      background: none;
-      border: none;
-      padding: 0;
-      font-size: 1rem;
-    }
+    .hero-media{display:flex;flex-direction:column;gap:12px;align-items:center}
+    .glass-card{width:100%;height:260px;border-radius:12px;background:var(--glass);border:1px solid rgba(6,111,255,0.08);display:flex;align-items:center;justify-content:center;flex-direction:column;padding:12px}
+    .glass-card img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 6px 20px rgba(6,111,255,0.08)}
 
-    nav#menu a:hover, nav#menu button:hover {
-      color: #cce0ff;
-    }
+    .features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:40px 36px;max-width:1100px;margin:0 auto}
+    .feature{background:linear-gradient(180deg, rgba(6,111,255,0.02), transparent);border:1px solid rgba(6,111,255,0.06);padding:18px;border-radius:12px}
+    .feature h3{margin:0 0 8px;color:var(--neon)}
+    .feature p{margin:0;color:#cfe9ff;opacity:0.9}
 
-    #feed {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px 10px 80px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+    footer{padding:28px 36px;text-align:center;color:#8fbfff;border-top:1px solid rgba(6,111,255,0.04);margin-top:36px}
 
-    /* Floating + button */
-    #add-post-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #06f;
-      color: #fff;
-      font-size: 2rem;
-      border: none;
-      border-radius: 50%;
-      width: 56px;
-      height: 56px;
-      cursor: pointer;
-      box-shadow: 0 0 10px #06f;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    #add-post-btn:hover {
-      background: #0a7fff;
-    }
-
-    /* Modal styling */
-    #create-post-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      z-index: 3000;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background: #111;
-      border: 1px solid #06f;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 0 15px #06f;
-      max-width: 500px;
-      width: 90%;
-    }
-    .modal-content h2 {
-      margin-top: 0;
-      color: #06f;
-    }
-    .modal-content textarea {
-      width: 480px;
-      height: 100px;
-      border: 1px solid #06f;
-      border-radius: 8px;
-      background: #000;
-      color: #fff;
-      padding: 10px;
-      left: 10px;
-      resize: none;
-    }
-    #create-post-modal label[for="file-upload"] {
-      margin-top: 10px;
-      cursor: pointer;
-      color: #363737;
-      font-weight: 700;
-      border: 2px dashed #06f;
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
-      user-select: none;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-
-    #create-post-modal label[for="file-upload"]:hover {
-      background: #363737;
-      color: #000;
-    }
-
-    #create-post-modal #file-upload {
-      display: none;
-    }
-
-    #create-post-modal #file-preview {
-      margin-top: 10px;
-      color: #eee;
-      max-height: 150px;
-      overflow: auto;
-      font-size: 0.9rem;
-      user-select: text;
-    }
-
-    #create-post-modal #file-preview img,
-    #create-post-modal #file-preview video {
-      max-width: 100%;
-      margin-top: 10px;
-      border-radius: 8px;
-      box-shadow: 0 0 8px #06f;
-    }
-    .modal-actions {
-      margin-top: 15px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    .btn {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .btn-cancel {
-      background: #333;
-      color: #06f;
-    }
-    .btn-post {
-      background: #06f;
-      color: #fff;
-    }
-    .btn-post:hover {
-      background: #0a7fff;
-    }
-    .post {
-      background: #000;
-      border: 2px solid #06f;
-      border-radius: 12px;
-      padding: 15px;
-      box-shadow: 0 0 15px #06f;
-      color: #fff;
-    }
-
-    .post img {
-      max-width: 100%;
-      border-radius: 8px;
-      margin-top: 10px;
-      box-shadow: 0 0 10px #06f;
-    }  
-
-    /* Alert modal */
-    #alert-modal.hidden {
-      display: none !important;
-    }
+    /* Responsive */
+    @media (max-width:900px){.hero-inner{grid-template-columns:1fr;padding:28px}.hero-media{order:-1}.features{grid-template-columns:repeat(1,1fr);padding:20px}}
   </style>
 </head>
 <body>
-
+  <div class="scanline" aria-hidden="true"></div>
   <header>
-    <button id="menu-btn" aria-label="Menu">☰</button>
-    <div id="menu-title">Lyrical Novaa</div>
-    <img id="logo" src="/static/logo.png" alt="Lyrical Novaa Logo" />
+    <div id="brand">
+      <img id="logo" src="/static/logo.png" alt="Lyrical Novaa Logo">
+      <div id="menu-title">Lyrical Novaa</div>
+    </div>
+    <nav>
+      <a href="/login">Log in</a>
+      <a href="/create-account" class="primary">Get Started</a>
+    </nav>
   </header>
 
-  <nav id="menu" class="hidden">
-    <a href="/home">Home</a>
-    <a href="/profile">Profile</a>
-    <a href="/settings">Settings</a>
-    <button id="logout-btn">Logout</button>
-  </nav>
+  <main class="hero">
+    <section class="hero-inner">
+      <div class="hero-copy">
+        <h1>Where Words Become Waves</h1>
+        <p>Share creative ideas, collaborate with artists, and discover live micro-moments — all in a neon-lit, fast, and friendly space.</p>
+        <div class="cta-row">
+          <a href="/create-account" class="btn btn-primary">Create Account</a>
+          <a href="/home" class="btn btn-ghost">Explore Features</a>
+        </div>
+        <div style="margin-top:22px;color:#9fc8ff;font-weight:600">No ads · Real creators · Instant feeds</div>
+      </div>
 
-  <main id="feed">
-    <!-- posts will load here -->
+      <aside class="hero-media">
+        <div class="glass-card">
+          <img src="/uploads/27e16b16340038ecd79e4b22f8597962" alt="Art preview" />
+        </div>
+        <div style="display:flex;gap:8px;width:100%">
+          <div class="glass-card" style="flex:1;height:80px;align-items:flex-start;padding:10px">Live collaboration</div>
+          <div class="glass-card" style="flex:1;height:80px;align-items:flex-start;padding:10px">Neon profiles</div>
+        </div>
+      </aside>
+    </section>
   </main>
 
-  <!-- Floating + Button -->
-  <button id="add-post-btn">+</button>
-
-  <!-- Create Post Modal -->
-  <div id="create-post-modal">
-    <div class="modal-content">
-      <h2>Create Post</h2>
-      <textarea id="post-text" placeholder="What's on your mind?"></textarea>
-      <label for="file-upload" style="margin-top:10px; display:block; cursor:pointer; color:#06f; font-weight:bold; border:2px dashed #06f; border-radius:8px; padding:10px; text-align:center;">Upload File</label>
-      <input type="file" id="file-upload" name="media" style="display:none;" />
-      <div id="file-preview" style="margin-top:10px; color:#eee; max-height:150px; overflow:auto;"></div>
-      <div class="modal-actions">
-        <button class="btn btn-cancel" id="cancel-post">Cancel</button>
-        <button class="btn btn-post" id="submit-post">Post</button>
-      </div>
+  <section class="features">
+    <div class="feature">
+      <h3>Instant Sharing</h3>
+      <p>Post photos, short clips, or quick thoughts with one tap — optimized for creators.</p>
     </div>
-  </div>
-
-  <!-- Custom Alert Modal -->
-  <div id="alert-modal" class="hidden" style="
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 4000;
-  ">
-    <div style="
-      background: #111;
-      border: 1px solid #06f;
-      border-radius: 12px;
-      padding: 20px 30px;
-      box-shadow: 0 0 15px #06f;
-      max-width: 300px;
-      color: #06f;
-      font-weight: bold;
-      text-align: center;
-      user-select: none;
-    ">
-      <div id="alert-text" style="margin-bottom: 20px;"></div>
-      <button id="alert-ok" style="
-        background: #06f;
-        border: none;
-        border-radius: 8px;
-        color: white;
-        padding: 8px 20px;
-        font-weight: bold;
-        cursor: pointer;
-      ">OK</button>
+    <div class="feature">
+      <h3>Discover</h3>
+      <p>Personalized explorations surface creators and ideas you'll love.</p>
     </div>
-  </div>
+    <div class="feature">
+      <h3>Collaborate</h3>
+      <p>Team up on polls, live sessions, and creative threads with rich media.</p>
+    </div>
+  </section>
 
-  <script src="/static/home.js"></script>
+  <footer>
+    <div>© <span id="year">2026</span> Lyrical Novaa — Built for creators</div>
+  </footer>
+
 </body>
 </html>
