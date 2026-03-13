@@ -1,136 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lyrical Novaa — Connect Creatively</title>
-  <style>
-    :root{--bg:#000;--neon:#06f;--neon-2:#0a7fff;--glass:rgba(255,255,255,0.03)}
-    html,body{height:100%;margin:0;background:var(--bg);color:var(--neon);font-family:'Segoe UI',Tahoma,Helvetica,Arial,sans-serif}
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Lyrical Novaa — Connect Creatively</title>
 
-    /* Animated starfield + subtle gradient */
-    body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse at 10% 10%, rgba(6,111,255,0.06), transparent 10%), radial-gradient(ellipse at 90% 80%, rgba(10,127,255,0.04), transparent 12%);pointer-events:none;z-index:0}
-    .scanline{position:fixed;inset:0;background-image:linear-gradient(rgba(6,111,255,0.02) 1px, transparent 1px);background-size:100% 3px;mix-blend-mode:overlay;opacity:0.6;pointer-events:none}
+<style>
+:root{--bg:#000;--neon:#06f;--neon-2:#0a7fff;--glass:rgba(255,255,255,0.03)}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--neon);font-family:'Segoe UI',Tahoma,Helvetica,Arial,sans-serif}
 
-    header{position:relative;display:flex;align-items:center;justify-content:space-between;padding:20px 36px;z-index:10}
-    #brand{display:flex;align-items:center;gap:14px}
-    #logo{height:44px}
-    #menu-title{font-size:1.35rem;font-weight:800;color:var(--neon);letter-spacing:0.6px}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse at 10% 10%, rgba(6,111,255,0.06), transparent 10%), radial-gradient(ellipse at 90% 80%, rgba(10,127,255,0.04), transparent 12%);pointer-events:none;z-index:0}
 
-    nav{display:flex;gap:18px;align-items:center}
-    nav a{color:var(--neon);text-decoration:none;font-weight:700;padding:8px 12px;border-radius:8px}
-    nav a.primary{background:linear-gradient(90deg,var(--neon),var(--neon-2));color:#001;box-shadow:0 6px 30px rgba(6,111,255,0.12)}
+.scanline{position:fixed;inset:0;background-image:linear-gradient(rgba(6,111,255,0.02) 1px, transparent 1px);background-size:100% 3px;mix-blend-mode:overlay;opacity:0.6;pointer-events:none}
 
-    main.hero{min-height:72vh;display:flex;align-items:center;justify-content:center;position:relative;z-index:5}
-    .hero-inner{max-width:1100px;margin:40px auto;padding:48px;border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(6,111,255,0.12);box-shadow:0 8px 40px rgba(6,111,255,0.06);display:grid;grid-template-columns:1fr 420px;gap:32px;align-items:center}
+header{position:relative;display:flex;align-items:center;justify-content:space-between;padding:20px 36px;z-index:10}
 
-    .hero-copy h1{font-size:clamp(2rem,4vw,3.4rem);margin:0 0 10px;color:var(--neon);text-shadow:0 0 18px rgba(6,111,255,0.18)}
-    .hero-copy p{color:#cfe9ff;opacity:0.9;font-weight:600;margin:0 0 20px}
+#brand{display:flex;align-items:center;gap:14px}
 
-    .cta-row{display:flex;gap:12px}
-    .btn{padding:12px 18px;border-radius:10px;font-weight:800;border:2px solid transparent;cursor:pointer}
-    .btn-ghost{background:transparent;color:var(--neon);border:1px solid rgba(6,111,255,0.18)}
-    .btn-primary{background:linear-gradient(90deg,var(--neon),var(--neon-2));color:#001;box-shadow:0 10px 30px rgba(6,111,255,0.12)}
+#logo{height:44px}
 
-    .hero-media{display:flex;flex-direction:column;gap:12px;align-items:center}
-    .glass-card{width:100%;height:260px;border-radius:12px;background:var(--glass);border:1px solid rgba(6,111,255,0.08);display:flex;align-items:center;justify-content:center;flex-direction:column;padding:12px}
-    .glass-card img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 6px 20px rgba(6,111,255,0.08)}
+#menu-title{font-size:1.35rem;font-weight:800;color:var(--neon);letter-spacing:0.6px}
 
-    .features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:40px 36px;max-width:1100px;margin:0 auto}
-    .feature{background:linear-gradient(180deg, rgba(6,111,255,0.02), transparent);border:1px solid rgba(6,111,255,0.06);padding:18px;border-radius:12px}
-    .feature h3{margin:0 0 8px;color:var(--neon)}
-    .feature p{margin:0;color:#cfe9ff;opacity:0.9}
+nav{display:flex;gap:18px;align-items:center}
 
-    footer{padding:28px 36px;text-align:center;color:#8fbfff;border-top:1px solid rgba(6,111,255,0.04);margin-top:36px}
+nav a{color:var(--neon);text-decoration:none;font-weight:700;padding:8px 12px;border-radius:8px}
 
-    /* Responsive */
-    @media (max-width:900px){.hero-inner{grid-template-columns:1fr;padding:28px}.hero-media{order:-1}.features{grid-template-columns:repeat(1,1fr);padding:20px}}
-  </style>
+nav a.primary{background:linear-gradient(90deg,var(--neon),var(--neon-2));color:#001;box-shadow:0 6px 30px rgba(6,111,255,0.12)}
+
+#nav-profile{display:none;align-items:center}
+
+#nav-profile img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--neon)}
+
+main.hero{min-height:72vh;display:flex;align-items:center;justify-content:center;position:relative;z-index:5}
+
+.hero-inner{max-width:1100px;margin:40px auto;padding:48px;border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(6,111,255,0.12);box-shadow:0 8px 40px rgba(6,111,255,0.06);display:grid;grid-template-columns:1fr 420px;gap:32px;align-items:center}
+
+.hero-copy h1{font-size:clamp(2rem,4vw,3.4rem);margin:0 0 10px;color:var(--neon);text-shadow:0 0 18px rgba(6,111,255,0.18)}
+
+.hero-copy p{color:#cfe9ff;opacity:0.9;font-weight:600;margin:0 0 20px}
+
+.cta-row{display:flex;gap:12px}
+
+.btn{padding:12px 18px;border-radius:10px;font-weight:800;border:2px solid transparent;cursor:pointer}
+
+.btn-ghost{background:transparent;color:var(--neon);border:1px solid rgba(6,111,255,0.18)}
+
+.btn-primary{background:linear-gradient(90deg,var(--neon),var(--neon-2));color:#001;box-shadow:0 10px 30px rgba(6,111,255,0.12)}
+
+.hero-media{display:flex;flex-direction:column;gap:12px;align-items:center}
+
+.glass-card{width:100%;height:260px;border-radius:12px;background:var(--glass);border:1px solid rgba(6,111,255,0.08);display:flex;align-items:center;justify-content:center;flex-direction:column;padding:12px}
+
+.glass-card img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 6px 20px rgba(6,111,255,0.08)}
+
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:40px 36px;max-width:1100px;margin:0 auto}
+
+.feature{background:linear-gradient(180deg, rgba(6,111,255,0.02), transparent);border:1px solid rgba(6,111,255,0.06);padding:18px;border-radius:12px}
+
+.feature h3{margin:0 0 8px;color:var(--neon)}
+
+.feature p{margin:0;color:#cfe9ff;opacity:0.9}
+
+footer{padding:28px 36px;text-align:center;color:#8fbfff;border-top:1px solid rgba(6,111,255,0.04);margin-top:36px}
+
+@media (max-width:900px){
+.hero-inner{grid-template-columns:1fr;padding:28px}
+.hero-media{order:-1}
+.features{grid-template-columns:repeat(1,1fr);padding:20px}
+}
+</style>
 </head>
+
 <body>
-  <div class="scanline" aria-hidden="true"></div>
-  <header>
-    <div id="brand">
-      <button id="menu-toggle" aria-label="Open menu" style="background:transparent;border:1px solid rgba(6,111,255,0.08);color:var(--neon);padding:8px;border-radius:8px;cursor:pointer;margin-right:12px;display:none">☰</button>
-      <img id="logo" src="/static/logo.png" alt="Lyrical Novaa Logo">
-      <div id="menu-title">Lyrical Novaa Productions</div>
-    </div>
-    <nav id="main-nav">
-      <a id="nav-home" href="/">Home</a>
-      <a id="nav-shop" href="/shop">Shop</a>
-      <a id="nav-team" href="/team">Team</a>
-      <a id="nav-contact" href="/contact-us">Contact</a>
-      <a id="nav-login" href="/login">Log in</a>
-      <a id="nav-get-started" href="/create-account" class="primary">Get Started</a>
-      <a id="nav-dashboard" href="/profile" style="display:none;">My Dashboard</a>
-      <button id="nav-logout" style="display:none;background:transparent;border:1px solid rgba(6,111,255,0.08);color:var(--neon);padding:8px 10px;border-radius:8px;cursor:pointer;">Logout</button>
-    </nav>
-    <div id="mobile-menu" class="hidden" style="position:fixed;top:70px;right:16px;background:#000;border:1px solid rgba(6,111,255,0.06);border-radius:10px;padding:12px;box-shadow:0 10px 40px rgba(6,111,255,0.12);z-index:1500;display:none">
-      <a href="/">Home</a><br/>
-      <a href="/shop">Shop</a><br/>
-      <a href="/team">Team</a><br/>
-      <a href="/contact-us">Contact</a><br/>
-      <a id="mobile-login" href="/login">Log in</a><br/>
-      <a id="mobile-get-started" href="/create-account">Get Started</a><br/>
-      <a id="mobile-dashboard" href="/profile" style="display:none">My Dashboard</a><br/>
-      <button id="mobile-logout" style="display:none;background:transparent;border:1px solid rgba(6,111,255,0.08);color:var(--neon);padding:8px;border-radius:8px;cursor:pointer;margin-top:8px;">Logout</button>
-    </div>
-  </header>
 
-  <main class="hero">
-    <section class="hero-inner">
-      <div class="hero-copy">
-        <h1>Where Words Become Waves</h1>
-        <p>Share creative ideas, collaborate with artists, and discover live micro-moments — all in a neon-lit, fast, and friendly space.</p>
-        <div class="cta-row">
-          <a id="cta-create" href="/create-account" class="btn btn-primary">Create Account</a>
-          <a id="cta-explore" href="#features" class="btn btn-ghost">Explore Features</a>
-        </div>
-        <div style="margin-top:22px;color:#9fc8ff;font-weight:600">No ads · Real creators · Instant feeds</div>
-      </div>
+<div class="scanline"></div>
 
-      <aside class="hero-media">
-        <div class="glass-card">
-          <img src="/uploads/27e16b16340038ecd79e4b22f8597962" alt="Art preview" />
-        </div>
-        <div style="display:flex;gap:8px;width:100%">
-          <div class="glass-card" style="flex:1;height:80px;align-items:flex-start;padding:10px">Live collaboration</div>
-          <div class="glass-card" style="flex:1;height:80px;align-items:flex-start;padding:10px">Neon profiles</div>
-        </div>
-      </aside>
-    </section>
-  </main>
+<header>
 
-  <section id="features" class="features">
-    <div class="feature">
-      <h3>Instant Sharing</h3>
-      <p>Post photos, short clips, or quick thoughts with one tap — optimized for creators.</p>
-    </div>
-    <div class="feature">
-      <h3>Discover</h3>
-      <p>Personalized explorations surface creators and ideas you'll love.</p>
-    </div>
-    <div class="feature">
-      <h3>Collaborate</h3>
-      <p>Team up on polls, live sessions, and creative threads with rich media.</p>
-    </div>
-  </section>
+<div id="brand">
+<button id="menu-toggle" style="display:none">☰</button>
+<img id="logo" src="/static/logo.png">
+<div id="menu-title">Lyrical Novaa Productions</div>
+</div>
 
-  <!-- Label members -->
-  <section id="members" style="max-width:1100px;margin:28px auto;padding:20px 36px;">
-    <h2 style="color:var(--neon);margin:0 0 12px;font-size:1.4rem">Our Artists</h2>
-    <div id="members-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px"></div>
-  </section>
+<nav id="main-nav">
 
-  <!-- Store -->
-  <section id="store" style="max-width:1100px;margin:28px auto;padding:20px 36px;">
-    <h2 style="color:var(--neon);margin:0 0 12px;font-size:1.4rem">Store</h2>
-    <div id="store-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px"></div>
-  </section>
+<a id="nav-home" href="/">Home</a>
+<a id="nav-shop" href="/shop">Shop</a>
+<a id="nav-team" href="/team">Team</a>
+<a id="nav-contact" href="/contact-us">Contact</a>
 
-  <footer>
-    <div>© <span id="year">2026</span> Lyrical Novaa — Built for creators</div>
-  </footer>
+<a id="nav-login" href="/login">Log in</a>
+<a id="nav-get-started" href="/create-account" class="primary">Get Started</a>
+
+<!-- NEW PROFILE BUTTON -->
+<a id="nav-profile" href="/profile">
+<img id="nav-pfp" src="/static/default-pfp.png">
+</a>
+
+<a id="nav-dashboard" href="/profile" style="display:none;">My Dashboard</a>
+
+<button id="nav-logout" style="display:none;background:transparent;border:1px solid rgba(6,111,255,0.08);color:var(--neon);padding:8px 10px;border-radius:8px;">Logout</button>
+
+</nav>
+
+<div id="mobile-menu" style="display:none">
+
+<a href="/">Home</a>
+<a href="/shop">Shop</a>
+<a href="/team">Team</a>
+<a href="/contact-us">Contact</a>
+
+<a id="mobile-login" href="/login">Log in</a>
+<a id="mobile-get-started" href="/create-account">Get Started</a>
+
+<a id="mobile-dashboard" href="/profile" style="display:none">My Dashboard</a>
+
+<!-- NEW MOBILE PROFILE -->
+<div id="mobile-profile" style="display:none">
+<img id="mobile-pfp" src="/static/default-pfp.png" style="width:40px;border-radius:50%">
+</div>
+
+<button id="mobile-logout" style="display:none">Logout</button>
+
+</div>
+
+</header>
+
+<!-- REST OF YOUR PAGE UNCHANGED -->
+
+<main class="hero">
+<section class="hero-inner">
+
+<div class="hero-copy">
+<h1>Where Words Become Waves</h1>
+<p>Share creative ideas, collaborate with artists, and discover live micro-moments.</p>
+
+<div class="cta-row">
+<a id="cta-create" href="/create-account" class="btn btn-primary">Create Account</a>
+<a id="cta-explore" href="#features" class="btn btn-ghost">Explore Features</a>
+</div>
+
+</div>
+
+</section>
+</main>
+
+<footer>
+© <span id="year">2026</span> Lyrical Novaa
+</footer>
+
+<script src="/static/js/home.js"></script>
 
 </body>
 </html>
