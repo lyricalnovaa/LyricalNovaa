@@ -167,6 +167,34 @@ app.post('/api/generate-otp', async (req, res) => {
   }
 });
 
+app.get('/api/current-user', async (req, res) => {
+  if (!req.session.artistID) {
+    return res.status(401).json({ loggedIn: false });
+  }
+
+  try {
+    const userDoc = await db.collection('users').doc(req.session.artistID).get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ loggedIn: false });
+    }
+
+    const user = userDoc.data();
+
+    res.json({
+      loggedIn: true,
+      artistID: user.artistID,
+      artistName: user.artistName,
+      role: user.role,
+      profilePhotoPath: user.profilePhotoPath
+    });
+
+  } catch (err) {
+    console.error('Current user error:', err);
+    res.status(500).json({ loggedIn: false });
+  }
+});
+
 // =========================
 // API: Create Account
 // =========================
