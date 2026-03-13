@@ -15,12 +15,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const navGetStarted = document.getElementById('nav-get-started');
   const navDashboard = document.getElementById('nav-dashboard');
   const navLogout = document.getElementById('nav-logout');
+
+  // NEW profile elements
+  const navProfile = document.getElementById('nav-profile');
+  const navPfp = document.getElementById('nav-pfp');
+
   const menuToggle = document.getElementById('menu-toggle');
   const mobileMenu = document.getElementById('mobile-menu');
   const mobileLogin = document.getElementById('mobile-login');
   const mobileGetStarted = document.getElementById('mobile-get-started');
   const mobileDashboard = document.getElementById('mobile-dashboard');
   const mobileLogout = document.getElementById('mobile-logout');
+
+  // NEW mobile profile
+  const mobileProfile = document.getElementById('mobile-profile');
+  const mobilePfp = document.getElementById('mobile-pfp');
+
   const ctaCreate = document.getElementById('cta-create');
 
   // Check current user to toggle nav and fetch members
@@ -29,21 +39,43 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/current-user');
       if (!res.ok) throw new Error('no user');
       const user = await res.json();
-      // Accept different shapes: { loggedIn:true } or { artistID: '...' } etc.
+
       const isLogged = !!(user && (user.loggedIn || user.artistID || user.userId || user.id || user.email));
+
       if (isLogged) {
+
         // hide signup/login
         if (navLogin) navLogin.style.display = 'none';
         if (navGetStarted) navGetStarted.style.display = 'none';
         if (mobileLogin) mobileLogin.style.display = 'none';
         if (mobileGetStarted) mobileGetStarted.style.display = 'none';
+
         // show dashboard/logout
         if (navDashboard) navDashboard.style.display = '';
         if (navLogout) navLogout.style.display = '';
         if (mobileDashboard) mobileDashboard.style.display = '';
         if (mobileLogout) mobileLogout.style.display = '';
+
         if (ctaCreate) ctaCreate.style.display = 'none';
+
+        // NEW: show profile picture
+        const pfp =
+          user.profilePhotoPath ||
+          user.pfp ||
+          user.profilePhoto ||
+          '/static/default-pfp.png';
+
+        if (navProfile) {
+          navProfile.style.display = 'flex';
+          if (navPfp) navPfp.src = pfp;
+        }
+
+        if (mobileProfile) {
+          mobileProfile.style.display = 'block';
+          if (mobilePfp) mobilePfp.src = pfp;
+        }
       }
+
     } catch (err) {
       // not logged in; leave default nav
     }
@@ -58,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) { window.alert('Server error on logout'); }
     });
   }
+
   if (mobileLogout) {
     mobileLogout.addEventListener('click', async () => {
       try {
@@ -74,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.innerWidth < 900) menuToggle.style.display = '';
     else menuToggle.style.display = 'none';
   }
+
   updateMenuToggleVisibility();
   window.addEventListener('resize', updateMenuToggleVisibility);
 
@@ -86,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mobileMenu.style.display = 'none';
       }
     });
-    // close mobile menu on nav click
+
     mobileMenu.addEventListener('click', (e) => {
       const a = e.target.closest('a');
       if (a) mobileMenu.style.display = 'none';
@@ -96,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Smooth scroll "Explore" to features section if present
   exploreBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
-      if (!featuresSection) return; // fallback to default navigation
+      if (!featuresSection) return;
       e.preventDefault();
       featuresSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
@@ -125,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Small floating animation for images to give a futuristic subtle motion
+  // Small floating animation for images
   glassImgs.forEach((img, idx) => {
     img.style.transition = 'transform 1000ms cubic-bezier(.2,.9,.2,1)';
     let dir = idx % 2 === 0 ? 1 : -1;
@@ -135,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2500 + (idx * 300));
   });
 
-  // Placeholder SVG generator (data URL)
+  // Placeholder SVG generator
   function placeholderDataURL(label = 'placeholder', w = 600, h = 360) {
     const bg = '#0a1a2b';
     const fg = '#06f';
@@ -143,121 +177,49 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
   }
 
-  // Ensure hero images have a placeholder in case the real image is missing
   glassImgs.forEach(img => {
     if (!img.src) img.src = placeholderDataURL('Art preview', 600, 360);
     img.onerror = () => { img.src = placeholderDataURL('Placeholder', img.width || 600, img.height || 360); };
   });
 
-  // Render label members (fetches /api/label-members or uses fallback)
   (async function loadMembers() {
     const container = document.getElementById('members-grid');
     if (!container) return;
+
     let members = [];
     try {
       const res = await fetch('/api/label-members');
       if (res.ok) members = await res.json();
-    } catch (err) { /* ignore */ }
+    } catch {}
+
     if (!members || !members.length) {
-      // fallback sample members
       members = [
         { name: 'XANTANX', artistName: 'XANTANX', role: 'Artist', pfp: '/static/XANTANX.png' },
         { name: 'Mercy', artistName: 'Mercy Official', role: 'Artist', pfp: '/static/Mercy.png' }
       ];
     }
+
     container.innerHTML = '';
+
     members.forEach(m => {
       const el = document.createElement('div');
       el.style.padding = '12px';
       el.style.borderRadius = '10px';
       el.style.background = 'linear-gradient(180deg, rgba(6,111,255,0.02), transparent)';
       el.style.border = '1px solid rgba(6,111,255,0.06)';
+
       el.innerHTML = `
         <div style="display:flex;gap:12px;align-items:center">
-          <img src="${m.pfp || '/static/default-pfp.png'}" alt="${m.artistName}" style="width:64px;height:64px;border-radius:10px;object-fit:cover;box-shadow:0 6px 18px rgba(6,111,255,0.06);" onerror="this.src='/static/default-pfp.png'" />
+          <img src="${m.pfp || '/static/default-pfp.png'}" style="width:64px;height:64px;border-radius:10px;object-fit:cover;">
           <div>
             <div style="font-weight:800;color:var(--neon)">${m.name || m.artistName}</div>
-            <div style="color:#cfe9ff;opacity:0.9">@${m.artistName || ''} • ${m.role || 'Artist'}</div>
+            <div style="color:#cfe9ff">@${m.artistName || ''} • ${m.role || 'Artist'}</div>
           </div>
         </div>
       `;
+
       container.appendChild(el);
     });
   })();
 
-  // Render simple store items
-  (function loadStore() {
-    const storeGrid = document.getElementById('store-grid');
-    if (!storeGrid) return;
-    const items = [
-      { id: 'beat-001', title: 'Midnight Beat', price: '$29', img: placeholderDataURL('Beat', 360, 200) },
-      { id: 'merch-001', title: 'Lyrical Novaa Tee', price: '$24', img: placeholderDataURL('Tee', 360, 200) },
-      { id: 'sample-pack', title: 'Sample Pack Vol.1', price: '$12', img: placeholderDataURL('Samples', 360, 200) }
-    ];
-    storeGrid.innerHTML = '';
-    items.forEach(it => {
-      const card = document.createElement('div');
-      card.style.padding = '12px';
-      card.style.borderRadius = '10px';
-      card.style.background = 'linear-gradient(180deg, rgba(6,111,255,0.02), transparent)';
-      card.style.border = '1px solid rgba(6,111,255,0.06)';
-      card.innerHTML = `
-        <img src="${it.img}" alt="${it.title}" style="width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:10px;" />
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-weight:800;color:var(--neon)">${it.title}</div>
-          <div style="color:#cfe9ff">${it.price}</div>
-        </div>
-        <div style="margin-top:10px;display:flex;gap:8px">
-          <button class="buy-btn" data-id="${it.id}" style="flex:1;padding:10px;border-radius:8px;background:linear-gradient(90deg,var(--neon),var(--neon-2));border:none;color:#001;cursor:pointer;font-weight:800">Buy</button>
-          <button class="preview-btn" data-id="${it.id}" style="padding:10px;border-radius:8px;border:1px solid rgba(6,111,255,0.08);background:transparent;color:var(--neon);cursor:pointer">Preview</button>
-        </div>
-      `;
-      storeGrid.appendChild(card);
-    });
-
-    // basic handlers
-    storeGrid.addEventListener('click', (e) => {
-      const b = e.target.closest('.buy-btn');
-      if (b) { window.alert('Cart and payment not configured — this is a placeholder.'); }
-      const p = e.target.closest('.preview-btn');
-      if (p) { window.alert('Preview not available in this demo.'); }
-    });
-  })();
-
-  // Make sure the page doesn't try to run feed/post code when homepage is a landing page
-  // No-op if elements are missing.
-  const feedContainer = document.getElementById('feed');
-  if (feedContainer) {
-    // Keep original feed loader behavior but guarded
-    async function loadFeed() {
-      try {
-        const res = await fetch('/api/posts');
-        if (!res.ok) throw new Error('Failed to fetch posts');
-        const posts = await res.json();
-        feedContainer.innerHTML = '';
-        posts.forEach(post => {
-          const postEl = document.createElement('div');
-          postEl.className = 'post';
-          let mediaHTML = '';
-          if (post.media) {
-            if (post.mediaType === 'image') mediaHTML = `<img src="${post.media}" alt="Post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />`;
-            else if (post.mediaType === 'video') mediaHTML = `<video controls style="max-width:100%; border-radius:8px; margin-top:8px;"><source src="${post.media}" type="video/mp4" /></video>`;
-          }
-          postEl.innerHTML = `
-            <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-              <img src="${post.profilePhotoPath || '/static/default-pfp.png'}" alt="Profile Picture" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" />
-              <a href="/profile/${post.artistName}" style="color:#06f; font-weight:bold; text-decoration:none;">${post.artistName || post.artistID}</a>
-            </div>
-            <div class="post-content" style="color:#eee; margin-bottom:12px;">${post.content || ''}</div>
-            ${mediaHTML}
-          `;
-          feedContainer.appendChild(postEl);
-        });
-      } catch (err) {
-        console.error('Load feed error:', err);
-        feedContainer.textContent = 'Failed to load feed.';
-      }
-    }
-    loadFeed();
-  }
 });
