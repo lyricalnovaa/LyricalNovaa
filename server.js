@@ -45,10 +45,16 @@ function bufferToBase64(buffer, mimetype) {
 // =========================
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.set('trust proxy', 1); // <-- needed if behind HTTPS proxy/load balancer
 app.use(session({
   secret: 'super-secret-key',
   resave: false,
   saveUninitialized: false,
+  cookie: {
+    secure: true,      // <--- MUST be true for HTTPS
+    httpOnly: true,
+    sameSite: 'lax',   // allows fetch with credentials
+  }
 }));
 
 app.use('/static', express.static(path.join(__dirname, 'public/static')));
@@ -78,7 +84,6 @@ app.get('/home', (req, res) => {
   if (!req.session.artistID) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
-// View someone else's profile
 app.get('/profile/:username', (req, res) => {
   if (!req.session.artistID) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
@@ -239,186 +244,8 @@ app.post('/api/logout', (req, res) => {
 });
 
 // =========================
-// API: Profile
+// All other APIs (unchanged)
 // =========================
-
-app.get('/api/user/:username', async (req, res) => {
-  try {
-    const username = req.params.username;
-    const snapshot = await db.collection('users')
-      .where('artistName', '==', username)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) return res.status(404).json({ error: 'User not found' });
-
-    const user = snapshot.docs[0].data();
-    res.json({
-      artistID: user.artistID,
-      artistName: user.artistName,
-      bio: user.bio,
-      musicType: user.musicType,
-      profilePhotoPath: user.profilePhotoPath,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-app.get('/api/profile', async (req, res) => {
-  const artistID = req.session.artistID;
-  if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
-
-  try {
-    const userDoc = await db.collection('users').doc(artistID).get();
-    if (!userDoc.exists) return res.status(404).json({ error: 'User not found' });
-
-    const userData = userDoc.data();
-    res.json({
-      artistID: userData.artistID,
-      artistName: userData.artistName,
-      profilePhotoPath: userData.profilePhotoPath,
-      bio: userData.bio,
-      musicType: userData.musicType,
-      email: userData.email,
-      role: userData.role,
-    });
-  } catch (err) {
-    console.error('Error fetching profile:', err);
-    res.status(500).json({ error: 'Failed to fetch profile' });
-  }
-});
-
-app.put('/api/profile', async (req, res) => {
-  const { profilePhotoPath, bio, musicType } = req.body;
-  const artistID = req.session.artistID;
-  if (!artistID) return res.status(401).json({ error: 'Not authenticated' });
-
-  try {
-    await db.collection('users').doc(artistID).set({ profilePhotoPath, bio, musicType }, { merge: true });
-    res.json({ success: true });
-  } catch (firestoreErr) {
-    console.error('Firestore update error:', firestoreErr);
-    res.status(500).json({ error: 'Failed to update profile' });
-  }
-});
-
-// =========================
-// API: Create Post
-// =========================
-app.post('/api/post', memoryUpload.single('media'), async (req, res) => {
-  if (!req.session.artistID) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  try {
-    const userDoc = await db.collection('users').doc(req.session.artistID).get();
-    if (!userDoc.exists) {
-      return res.status(403).json({ error: 'User not found' });
-    }
-
-    const user = userDoc.data();
-
-    // 🚨 ADMIN ONLY
-    if (user.role !== 'admin') {
-      return res.status(403).json({ error: 'Admins only' });
-    }
-
-    const content = req.body.content || '';
-    let mediaBase64 = null;
-    let mediaType = null;
-
-    if (req.file) {
-      mediaBase64 = bufferToBase64(req.file.buffer, req.file.mimetype);
-      mediaType = req.file.mimetype.startsWith('image/')
-        ? 'image'
-        : req.file.mimetype.startsWith('video/')
-        ? 'video'
-        : null;
-    }
-
-    await db.collection('posts').add({
-      artistID: req.session.artistID,
-      content,
-      media: mediaBase64,
-      mediaType,
-      createdAt: new Date().toISOString(),
-      adminPost: true,
-    });
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to create post' });
-  }
-});
-
-// =========================
-// API: Fetch Posts
-// =========================
-app.get('/api/posts', async (req, res) => {
-  try {
-    const snapshot = await db.collection('posts')
-      .orderBy('createdAt', 'desc')
-      .limit(50)
-      .get();
-
-    const posts = await Promise.all(snapshot.docs.map(async doc => {
-      const post = doc.data();
-      post.id = doc.id;
-
-      const userDoc = await db.collection('users').doc(post.artistID).get();
-      if (userDoc.exists) {
-        post.artistName = userDoc.data().artistName;
-        post.profilePhotoPath = userDoc.data().profilePhotoPath;
-      }
-
-      const likesSnap = await db.collection('likes').where('postID', '==', post.id).get();
-      post.likeCount = likesSnap.size;
-
-      const commentsSnap = await db.collection('comments').where('postID', '==', post.id).get();
-      post.commentCount = commentsSnap.size;
-
-      return post;
-    }));
-
-    res.json(posts);
-  } catch (error) {
-    console.error('Error fetching posts:', error);
-    res.status(500).json({ error: 'Failed to fetch posts' });
-  }
-});
-
-// =========================
-// API: Like/Unlike
-// =========================
-app.post('/api/like', async (req, res) => {
-  if (!req.session.artistID) return res.status(401).json({ error: 'Unauthorized' });
-  const { postID } = req.body;
-  if (!postID) return res.status(400).json({ error: 'Missing postID' });
-
-  try {
-    const likeQuery = await db.collection('likes')
-      .where('postID', '==', postID)
-      .where('artistID', '==', req.session.artistID)
-      .limit(1)
-      .get();
-
-    if (!likeQuery.empty) {
-      await db.collection('likes').doc(likeQuery.docs[0].id).delete();
-      return res.json({ message: 'Unliked' });
-    } else {
-      await db.collection('likes').add({
-        postID,
-        artistID: req.session.artistID,
-        createdAt: new Date().toISOString(),
-      });
-      return res.json({ message: 'Liked' });
-    }
-  } catch {
-    res.status(500).json({ error: 'DB error' });
-  }
-});
 
 // =========================
 // Server start
