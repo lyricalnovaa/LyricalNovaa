@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const navDashboard = document.getElementById('nav-dashboard');
   const navLogout = document.getElementById('nav-logout');
 
-  // NEW profile elements
   const navProfile = document.getElementById('nav-profile');
   const navPfp = document.getElementById('nav-pfp');
 
@@ -27,17 +26,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const mobileDashboard = document.getElementById('mobile-dashboard');
   const mobileLogout = document.getElementById('mobile-logout');
 
-  // NEW mobile profile
   const mobileProfile = document.getElementById('mobile-profile');
   const mobilePfp = document.getElementById('mobile-pfp');
 
   const ctaCreate = document.getElementById('cta-create');
 
-  // Check current user to toggle nav and fetch members
+  // ✅ FIXED: include credentials
   (async function initUser() {
     try {
-      const res = await fetch('/api/current-user');
+      const res = await fetch('/api/current-user', {
+        credentials: 'include'
+      });
+
       if (!res.ok) throw new Error('no user');
+
       const user = await res.json();
 
       const isLogged = !!(user && (user.loggedIn || user.artistID || user.userId || user.id || user.email));
@@ -51,14 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mobileGetStarted) mobileGetStarted.style.display = 'none';
 
         // show dashboard/logout
-        if (navDashboard) navDashboard.style.display = '';
-        if (navLogout) navLogout.style.display = '';
-        if (mobileDashboard) mobileDashboard.style.display = '';
-        if (mobileLogout) mobileLogout.style.display = '';
+        if (navDashboard) navDashboard.style.display = 'inline-block';
+        if (navLogout) navLogout.style.display = 'inline-block';
+        if (mobileDashboard) mobileDashboard.style.display = 'block';
+        if (mobileLogout) mobileLogout.style.display = 'block';
 
         if (ctaCreate) ctaCreate.style.display = 'none';
 
-        // NEW: show profile picture
+        // profile picture
         const pfp =
           user.profilePhotoPath ||
           user.pfp ||
@@ -77,14 +79,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
     } catch (err) {
-      // not logged in; leave default nav
+      console.log('Not logged in');
     }
   })();
 
+  // ✅ FIXED logout (include credentials)
   if (navLogout) {
     navLogout.addEventListener('click', async () => {
       try {
-        const res = await fetch('/api/logout', { method: 'POST' });
+        const res = await fetch('/api/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
         if (res.ok) window.location.reload();
         else window.alert('Logout failed');
       } catch (err) { window.alert('Server error on logout'); }
@@ -94,7 +100,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (mobileLogout) {
     mobileLogout.addEventListener('click', async () => {
       try {
-        const res = await fetch('/api/logout', { method: 'POST' });
+        const res = await fetch('/api/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
         if (res.ok) window.location.reload();
         else window.alert('Logout failed');
       } catch (err) { window.alert('Server error on logout'); }
@@ -113,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (menuToggle && mobileMenu) {
     menuToggle.addEventListener('click', () => {
-      const open = mobileMenu.style.display !== 'none' && mobileMenu.style.display !== '' ? true : mobileMenu.style.display === '';
       if (mobileMenu.style.display === 'none' || !mobileMenu.style.display) {
         mobileMenu.style.display = 'block';
       } else {
@@ -127,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Smooth scroll "Explore" to features section if present
+  // Smooth scroll
   exploreBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       if (!featuresSection) return;
@@ -136,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Simple entrance animation
+  // Animations
   requestAnimationFrame(() => {
     if (heroInner) {
       heroInner.style.opacity = 0;
@@ -159,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Small floating animation for images
+  // Floating images
   glassImgs.forEach((img, idx) => {
     img.style.transition = 'transform 1000ms cubic-bezier(.2,.9,.2,1)';
     let dir = idx % 2 === 0 ? 1 : -1;
@@ -168,58 +176,5 @@ document.addEventListener('DOMContentLoaded', () => {
       dir = -dir;
     }, 2500 + (idx * 300));
   });
-
-  // Placeholder SVG generator
-  function placeholderDataURL(label = 'placeholder', w = 600, h = 360) {
-    const bg = '#0a1a2b';
-    const fg = '#06f';
-    const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'><rect width='100%' height='100%' fill='${bg}'/><g fill='${fg}' opacity='0.12'><rect x='0' y='0' width='100%' height='100%'/></g><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Segoe UI, Arial' font-size='20' fill='${fg}' opacity='0.9'>${label}</text></svg>`;
-    return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
-  }
-
-  glassImgs.forEach(img => {
-    if (!img.src) img.src = placeholderDataURL('Art preview', 600, 360);
-    img.onerror = () => { img.src = placeholderDataURL('Placeholder', img.width || 600, img.height || 360); };
-  });
-
-  (async function loadMembers() {
-    const container = document.getElementById('members-grid');
-    if (!container) return;
-
-    let members = [];
-    try {
-      const res = await fetch('/api/label-members');
-      if (res.ok) members = await res.json();
-    } catch {}
-
-    if (!members || !members.length) {
-      members = [
-        { name: 'XANTANX', artistName: 'XANTANX', role: 'Artist', pfp: '/static/XANTANX.png' },
-        { name: 'Mercy', artistName: 'Mercy Official', role: 'Artist', pfp: '/static/Mercy.png' }
-      ];
-    }
-
-    container.innerHTML = '';
-
-    members.forEach(m => {
-      const el = document.createElement('div');
-      el.style.padding = '12px';
-      el.style.borderRadius = '10px';
-      el.style.background = 'linear-gradient(180deg, rgba(6,111,255,0.02), transparent)';
-      el.style.border = '1px solid rgba(6,111,255,0.06)';
-
-      el.innerHTML = `
-        <div style="display:flex;gap:12px;align-items:center">
-          <img src="${m.pfp || '/static/default-pfp.png'}" style="width:64px;height:64px;border-radius:10px;object-fit:cover;">
-          <div>
-            <div style="font-weight:800;color:var(--neon)">${m.name || m.artistName}</div>
-            <div style="color:#cfe9ff">@${m.artistName || ''} • ${m.role || 'Artist'}</div>
-          </div>
-        </div>
-      `;
-
-      container.appendChild(el);
-    });
-  })();
 
 });
