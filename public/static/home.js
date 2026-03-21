@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // =========================
   // Safe getters
+  // =========================
   const header = document.querySelector('header');
   const exploreBtns = Array.from(document.querySelectorAll('a')).filter(a => /explore/i.test(a.textContent || ''));
   const featuresSection = document.querySelector('.features');
@@ -7,15 +9,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const glassImgs = Array.from(document.querySelectorAll('.glass-card img'));
   const yearEl = document.getElementById('year');
 
-  // Set current year
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  // =========================
   // Nav elements for logged-in state
+  // =========================
   const navLogin = document.getElementById('nav-login');
   const navGetStarted = document.getElementById('nav-get-started');
   const navDashboard = document.getElementById('nav-dashboard');
   const navLogout = document.getElementById('nav-logout');
-
   const navProfile = document.getElementById('nav-profile');
   const navPfp = document.getElementById('nav-pfp');
 
@@ -25,47 +27,39 @@ document.addEventListener('DOMContentLoaded', () => {
   const mobileGetStarted = document.getElementById('mobile-get-started');
   const mobileDashboard = document.getElementById('mobile-dashboard');
   const mobileLogout = document.getElementById('mobile-logout');
-
   const mobileProfile = document.getElementById('mobile-profile');
   const mobilePfp = document.getElementById('mobile-pfp');
 
   const ctaCreate = document.getElementById('cta-create');
 
-  // ✅ FIXED: include credentials
+  // =========================
+  // Init user (fixes logged-in nav)
+  // =========================
   (async function initUser() {
     try {
-      const res = await fetch('/api/current-user', {
-        credentials: 'include'
-      });
-
+      const res = await fetch('/api/current-user', { credentials: 'include' });
       if (!res.ok) throw new Error('no user');
-
       const user = await res.json();
 
       const isLogged = !!(user && (user.loggedIn || user.artistID || user.userId || user.id || user.email));
 
       if (isLogged) {
-
-        // hide signup/login
+        // Hide signup/login
         if (navLogin) navLogin.style.display = 'none';
         if (navGetStarted) navGetStarted.style.display = 'none';
         if (mobileLogin) mobileLogin.style.display = 'none';
         if (mobileGetStarted) mobileGetStarted.style.display = 'none';
 
-        // show dashboard/logout
-        if (navDashboard) navDashboard.style.display = 'inline-block';
-        if (navLogout) navLogout.style.display = 'inline-block';
-        if (mobileDashboard) mobileDashboard.style.display = 'block';
-        if (mobileLogout) mobileLogout.style.display = 'block';
+        // Show dashboard/logout
+        if (navDashboard) navDashboard.style.display = '';
+        if (navLogout) navLogout.style.display = '';
+        if (mobileDashboard) mobileDashboard.style.display = '';
+        if (mobileLogout) mobileLogout.style.display = '';
 
         if (ctaCreate) ctaCreate.style.display = 'none';
 
-        // profile picture
-        const pfp =
-          user.profilePhotoPath ||
-          user.pfp ||
-          user.profilePhoto ||
-          '/static/default-pfp.png';
+        // Show profile picture
+        const pfp = user.profilePhotoPath || user.pfp || user.profilePhoto || '/static/default-pfp.png';
 
         if (navProfile) {
           navProfile.style.display = 'flex';
@@ -77,65 +71,50 @@ document.addEventListener('DOMContentLoaded', () => {
           if (mobilePfp) mobilePfp.src = pfp;
         }
       }
-
     } catch (err) {
-      console.log('Not logged in');
+      // Not logged in; nav stays default
     }
   })();
 
-  // ✅ FIXED logout (include credentials)
-  if (navLogout) {
-    navLogout.addEventListener('click', async () => {
-      try {
-        const res = await fetch('/api/logout', {
-          method: 'POST',
-          credentials: 'include'
-        });
-        if (res.ok) window.location.reload();
-        else window.alert('Logout failed');
-      } catch (err) { window.alert('Server error on logout'); }
-    });
+  // =========================
+  // Logout handlers
+  // =========================
+  async function handleLogout() {
+    try {
+      const res = await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      if (res.ok) window.location.reload();
+      else window.alert('Logout failed');
+    } catch {
+      window.alert('Server error on logout');
+    }
   }
 
-  if (mobileLogout) {
-    mobileLogout.addEventListener('click', async () => {
-      try {
-        const res = await fetch('/api/logout', {
-          method: 'POST',
-          credentials: 'include'
-        });
-        if (res.ok) window.location.reload();
-        else window.alert('Logout failed');
-      } catch (err) { window.alert('Server error on logout'); }
-    });
-  }
+  if (navLogout) navLogout.addEventListener('click', handleLogout);
+  if (mobileLogout) mobileLogout.addEventListener('click', handleLogout);
 
-  // Mobile menu handling
+  // =========================
+  // Mobile menu toggle
+  // =========================
   function updateMenuToggleVisibility() {
     if (!menuToggle) return;
-    if (window.innerWidth < 900) menuToggle.style.display = '';
-    else menuToggle.style.display = 'none';
+    menuToggle.style.display = window.innerWidth < 900 ? '' : 'none';
   }
-
   updateMenuToggleVisibility();
   window.addEventListener('resize', updateMenuToggleVisibility);
 
   if (menuToggle && mobileMenu) {
     menuToggle.addEventListener('click', () => {
-      if (mobileMenu.style.display === 'none' || !mobileMenu.style.display) {
-        mobileMenu.style.display = 'block';
-      } else {
-        mobileMenu.style.display = 'none';
-      }
+      mobileMenu.style.display = mobileMenu.style.display === 'block' ? 'none' : 'block';
     });
 
     mobileMenu.addEventListener('click', (e) => {
-      const a = e.target.closest('a');
-      if (a) mobileMenu.style.display = 'none';
+      if (e.target.closest('a')) mobileMenu.style.display = 'none';
     });
   }
 
-  // Smooth scroll
+  // =========================
+  // Smooth scroll for Explore buttons
+  // =========================
   exploreBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       if (!featuresSection) return;
@@ -144,7 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Animations
+  // =========================
+  // Entrance animations
+  // =========================
   requestAnimationFrame(() => {
     if (heroInner) {
       heroInner.style.opacity = 0;
@@ -167,7 +148,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Floating images
+  // =========================
+  // Floating glass-card images
+  // =========================
   glassImgs.forEach((img, idx) => {
     img.style.transition = 'transform 1000ms cubic-bezier(.2,.9,.2,1)';
     let dir = idx % 2 === 0 ? 1 : -1;
@@ -177,4 +160,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2500 + (idx * 300));
   });
 
+  // =========================
+  // Placeholder SVGs
+  // =========================
+  function placeholderDataURL(label = 'placeholder', w = 600, h = 360) {
+    const bg = '#0a1a2b';
+    const fg = '#06f';
+    const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'><rect width='100%' height='100%' fill='${bg}'/><g fill='${fg}' opacity='0.12'><rect x='0' y='0' width='100%' height='100%'/></g><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Segoe UI, Arial' font-size='20' fill='${fg}' opacity='0.9'>${label}</text></svg>`;
+    return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+  }
+
+  glassImgs.forEach(img => {
+    if (!img.src) img.src = placeholderDataURL('Art preview', 600, 360);
+    img.onerror = () => { img.src = placeholderDataURL('Placeholder', img.width || 600, img.height || 360); };
+  });
+
+  // =========================
+  // Load label members
+  // =========================
+  (async function loadMembers() {
+    const container = document.getElementById('members-grid');
+    if (!container) return;
+
+    let members = [];
+    try {
+      const res = await fetch('/api/label-members', { credentials: 'include' });
+      if (res.ok) members = await res.json();
+    } catch {}
+
+    if (!members || !members.length) {
+      members = [
+        { name: 'XANTANX', artistName: 'XANTANX', role: 'Artist', pfp: '/static/XANTANX.png' },
+        { name: 'Mercy', artistName: 'Mercy Official', role: 'Artist', pfp: '/static/Mercy.png' }
+      ];
+    }
+
+    container.innerHTML = '';
+    members.forEach(m => {
+      const el = document.createElement('div');
+      el.style.padding = '12px';
+      el.style.borderRadius = '10px';
+      el.style.background = 'linear-gradient(180deg, rgba(6,111,255,0.02), transparent)';
+      el.style.border = '1px solid rgba(6,111,255,0.06)';
+      el.innerHTML = `
+        <div style="display:flex;gap:12px;align-items:center">
+          <img src="${m.pfp || '/static/default-pfp.png'}" style="width:64px;height:64px;border-radius:10px;object-fit:cover;">
+          <div>
+            <div style="font-weight:800;color:var(--neon)">${m.name || m.artistName}</div>
+            <div style="color:#cfe9ff">@${m.artistName || ''} • ${m.role || 'Artist'}</div>
+          </div>
+        </div>
+      `;
+      container.appendChild(el);
+    });
+  })();
 });
