@@ -9,8 +9,8 @@
       --bg: #000; 
       --neon: #06f; /* Lyrical Novaa Blue */
       --neon-2: #0a7fff;
-      --card-bg: rgba(6, 111, 255, 0.03);
-      --glow: 0 0 15px rgba(6, 111, 255, 0.4);
+      --card-bg: rgba(6, 111, 255, 0.05);
+      --glow: 0 0 20px rgba(6, 111, 255, 0.4);
     }
     
     body {
@@ -19,19 +19,9 @@
       color: #fff;
       font-family: 'Segoe UI', Tahoma, sans-serif;
       overflow-x: hidden;
-      position: relative;
-    }
-
-    /* Scanline Animation Effect */
-    body::after {
-      content: " ";
-      position: fixed;
-      top: 0; left: 0; bottom: 0; right: 0;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                  linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-      z-index: 9999;
-      background-size: 100% 2px, 3px 100%;
-      pointer-events: none;
+      /* Subtle radial gradient for depth without the "grain" */
+      background-image: radial-gradient(circle at 50% -20%, #001a33 0%, #000 70%);
+      background-attachment: fixed;
     }
 
     header {
@@ -40,8 +30,8 @@
       justify-content: space-between;
       padding: 18px 24px;
       border-bottom: 1px solid rgba(6, 111, 255, 0.2);
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(10px);
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -52,12 +42,11 @@
       text-decoration: none;
       font-weight: 700;
       transition: all 0.3s ease;
-      text-shadow: 0 0 5px rgba(6, 111, 255, 0.3);
     }
 
     a:hover {
       color: var(--neon-2);
-      text-shadow: 0 0 10px var(--neon-2);
+      filter: drop-shadow(0 0 5px var(--neon-2));
     }
 
     .container {
@@ -66,82 +55,75 @@
       padding: 0 20px;
     }
 
-    /* Three Column Grid Container */
     .shop-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 24px;
     }
 
-    /* Individual Scrollable Columns */
     .shop-column {
       background: var(--card-bg);
       border: 1px solid rgba(6, 111, 255, 0.15);
       border-radius: 16px;
-      padding: 20px;
+      padding: 24px;
       height: 72vh;
       overflow-y: auto;
-      transition: border 0.3s ease, box-shadow 0.3s ease;
       scrollbar-width: thin;
       scrollbar-color: var(--neon) transparent;
+      transition: border 0.3s ease;
     }
 
     .shop-column:hover {
-      border-color: var(--neon);
-      box-shadow: inset 0 0 20px rgba(6, 111, 255, 0.1);
+      border-color: rgba(6, 111, 255, 0.5);
     }
 
-    /* Custom Scrollbar for Chrome/Safari */
     .shop-column::-webkit-scrollbar { width: 5px; }
     .shop-column::-webkit-scrollbar-thumb { background: var(--neon); border-radius: 10px; }
 
     .column-title {
       color: var(--neon);
       margin-top: 0;
-      font-size: 1.6rem;
+      font-size: 1.5rem;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 2px;
-      border-bottom: 1px dashed rgba(6, 111, 255, 0.3);
-      padding-bottom: 15px;
+      letter-spacing: 1.5px;
+      border-bottom: 2px solid var(--neon);
+      padding-bottom: 12px;
       position: sticky;
       top: 0;
-      background: var(--bg);
+      background: #000;
       z-index: 2;
-      text-shadow: 0 0 10px rgba(6, 111, 255, 0.5);
     }
 
-    /* Item Card with Animations */
     .item-card {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(6, 111, 255, 0.1);
-      border-radius: 12px;
-      padding: 15px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 18px;
       margin-bottom: 20px;
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      animation: slideUp 0.5s ease-out forwards;
+      transition: all 0.3s ease;
+      animation: fadeIn 0.6s ease-out forwards;
     }
 
     .item-card:hover {
-      transform: scale(1.02);
-      background: rgba(6, 111, 255, 0.05);
+      background: rgba(6, 111, 255, 0.08);
       border-color: var(--neon);
+      transform: translateY(-4px);
       box-shadow: var(--glow);
     }
 
-    /* Product Specific Styles */
     .album-art {
       width: 100%;
       height: 220px;
-      background-image: url('DigitalDemonCover.jpg');
+      background-image: url('/static/DigitalDemonCover.jpg');
       background-size: cover;
       background-position: center;
-      border-radius: 8px;
-      margin-bottom: 12px;
+      border-radius: 10px;
+      margin-bottom: 15px;
       display: flex;
       align-items: flex-end;
-      border: 1px solid rgba(255, 255, 255, 0.1);
       overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .audio-controls {
@@ -149,36 +131,35 @@
       align-items: center;
       gap: 12px;
       width: 100%;
-      background: rgba(0, 0, 0, 0.75);
-      padding: 10px;
-      border-top: 1px solid var(--neon);
+      background: rgba(0, 0, 0, 0.8);
+      padding: 12px;
       box-sizing: border-box;
-      backdrop-filter: blur(5px);
+      backdrop-filter: blur(8px);
     }
 
     .play-btn {
       background: var(--neon);
-      color: #000;
+      color: #fff;
       border: none;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.2rem;
-      transition: all 0.3s ease;
+      transition: transform 0.2s;
     }
 
     .play-btn:hover {
       transform: scale(1.1);
-      box-shadow: 0 0 15px var(--neon);
+      background: var(--neon-2);
     }
 
     .play-btn.playing {
       animation: pulse 1.5s infinite;
       background: #fff;
+      color: var(--neon);
     }
 
     .stripe-btn {
@@ -186,46 +167,34 @@
       width: 100%;
       text-align: center;
       background: linear-gradient(90deg, var(--neon), var(--neon-2));
-      color: #000;
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 10px;
-      font-weight: 800;
+      color: #fff;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 12px;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      box-sizing: border-box;
       transition: 0.3s;
     }
 
     .stripe-btn:hover {
-      box-shadow: 0 0 20px var(--neon);
-      transform: translateY(-2px);
-      filter: brightness(1.1);
+      filter: brightness(1.2);
+      box-shadow: 0 0 15px var(--neon);
     }
 
-    /* Keyframes for Animations */
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(6, 111, 255, 0.7); }
-      70% { box-shadow: 0 0 0 15px rgba(6, 111, 255, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(6, 111, 255, 0.6); }
+      70% { box-shadow: 0 0 0 12px rgba(6, 111, 255, 0); }
       100% { box-shadow: 0 0 0 0 rgba(6, 111, 255, 0); }
     }
 
-    /* MOBILE RESPONSIVENESS */
     @media (max-width: 900px) {
-      .shop-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .shop-column {
-        height: auto;
-        overflow-y: visible;
-        margin-bottom: 25px;
-      }
+      .shop-grid { grid-template-columns: 1fr; }
+      .shop-column { height: auto; margin-bottom: 24px; }
     }
   </style>
 </head>
@@ -234,7 +203,7 @@
   <header>
     <div style="display:flex;gap:12px;align-items:center">
       <a href="/">← Home</a>
-      <div style="font-weight:800; color:#fff;">Shop</div>
+      <div style="font-weight:800; color:#fff; letter-spacing: 1px;">Lyrical Novaa Store</div>
     </div>
     <nav>
       <a href="/team" style="margin-right:12px">Team</a>
@@ -244,10 +213,8 @@
 
   <main class="container">
     <div class="shop-grid">
-
       <div class="shop-column">
         <h2 class="column-title">Beats</h2>
-        
         <div class="item-card">
           <div class="album-art">
             <div class="audio-controls">
@@ -256,46 +223,36 @@
             </div>
           </div>
           <audio id="digitalDemonsAudio" src="/static/DigitalDemonSample.wav"></audio>
-          
           <h3 style="margin: 5px 0 2px 0;">Digital Demons</h3>
-          <p style="margin: 0; font-size: 0.9rem; color: #aaa;">Majestic Trap / Lo-fi Beat</p>
-          <p style="font-size: 1.1rem; font-weight: bold; color: var(--neon-2); margin: 8px 0;">$15.00</p>
-          
-          <a href="https://buy.stripe.com/9B64gA9DQaeBdgv8JjaIM00" target="_blank" class="stripe-btn">Buy Beat</a>
-        </div>
-
-        <div class="item-card" style="opacity: 0.5;">
-          <h3 style="margin: 0 0 5px 0;">Future Beat Track</h3>
-          <p style="margin: 0; font-size: 0.9rem;">Coming Soon...</p>
+          <p style="margin: 0; font-size: 0.9rem; color: #8fbfff;">Majestic Trap / Lo-fi</p>
+          <p style="font-size: 1.2rem; font-weight: bold; color: var(--neon-2); margin: 10px 0;">$15.00</p>
+          <a href="https://buy.stripe.com/9B64gA9DQaeBdgv8JjaIM00" target="_blank" class="stripe-btn">Buy License</a>
         </div>
       </div>
 
       <div class="shop-column">
         <h2 class="column-title">Merch</h2>
-        
         <div class="item-card">
-          <div style="height: 150px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-            <span>Hoodies</span>
+          <div style="height: 180px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; border: 1px dashed rgba(6, 111, 255, 0.3);">
+            <span style="color: var(--neon-2);">👕 New Merch Soon</span>
           </div>
-          <h3 style="margin: 5px 0 2px 0;">Lyrical Novaa Hoodie</h3>
-          <p style="font-size: 1.1rem; font-weight: bold; color: var(--neon-2); margin: 8px 0;">$24.00</p>
-          <a href="#" class="stripe-btn">Coming Soon</a>
+          <h3 style="margin: 5px 0 2px 0;">Novaa Essential Hoodie</h3>
+          <p style="font-size: 1.2rem; font-weight: bold; color: var(--neon-2); margin: 10px 0;">$24.00</p>
+          <a href="#" class="stripe-btn" style="opacity: 0.6; pointer-events: none;">Sold Out</a>
         </div>
       </div>
 
       <div class="shop-column">
-        <h2 class="column-title">Vocal Presets</h2>
-        
+        <h2 class="column-title">Presets</h2>
         <div class="item-card">
-          <div style="height: 150px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-            <span>🎙 FL Studio Preset</span>
+          <div style="height: 180px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; border: 1px dashed rgba(6, 111, 255, 0.3);">
+            <span style="color: var(--neon-2);">🎙 Vocal Chains</span>
           </div>
           <h3 style="margin: 5px 0 2px 0;">Sad Boy Melodic Preset</h3>
-          <p style="font-size: 1.1rem; font-weight: bold; color: var(--neon-2); margin: 8px 0;">$12.00</p>
-          <a href="#" class="stripe-btn">Coming Soon</a>
+          <p style="font-size: 1.2rem; font-weight: bold; color: var(--neon-2); margin: 10px 0;">$12.00</p>
+          <a href="#" class="stripe-btn">Buy Preset</a>
         </div>
       </div>
-
     </div>
   </main>
 
