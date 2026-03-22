@@ -5,35 +5,231 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Shop — Lyrical Novaa</title>
   <style>
-    :root{--bg:#000;--neon:#06f;--neon-2:#0a7fff}
-    body{margin:0;background:var(--bg);color:var(--neon);font-family:'Segoe UI',sans-serif}
-    header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px}
-    a{color:var(--neon);text-decoration:none}
-    .container{max-width:1100px;margin:36px auto;padding:0 20px}
-    .card{background:rgba(255,255,255,0.02);border:1px solid rgba(6,111,255,0.06);padding:18px;border-radius:12px}
+    :root{
+      --bg:#0b001a; /* Dark cyber/lofi purple */
+      --neon:#9d4edd; /* Juice WRLD / Cyber Neon Purple */
+      --neon-2:#e0aaff;
+      --card-bg: rgba(255, 255, 255, 0.03);
+    }
+    
+    body{
+      margin:0;
+      background:var(--bg);
+      color:#fff;
+      font-family:'Segoe UI', sans-serif;
+      overflow-x: hidden;
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 18px 24px;
+      border-bottom: 1px solid rgba(157, 78, 221, 0.2);
+    }
+
+    a{
+      color:var(--neon);
+      text-decoration:none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    a:hover {
+      color: var(--neon-2);
+    }
+
+    .container{
+      max-width: 1200px;
+      margin: 36px auto;
+      padding: 0 20px;
+    }
+
+    /* Three Column Grid Container */
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    /* Individual Scrollable Columns */
+    .shop-column {
+      background: var(--card-bg);
+      border: 1px solid rgba(157, 78, 221, 0.15);
+      border-radius: 12px;
+      padding: 20px;
+      height: 70vh; /* Fixed height for scrollability */
+      overflow-y: auto;
+    }
+
+    .shop-column::-webkit-scrollbar {
+      width: 6px;
+    }
+    .shop-column::-webkit-scrollbar-thumb {
+      background: var(--neon);
+      border-radius: 3px;
+    }
+
+    .column-title {
+      color: var(--neon);
+      margin-top: 0;
+      font-size: 1.5rem;
+      border-bottom: 1px solid rgba(157, 78, 221, 0.2);
+      padding-bottom: 10px;
+      position: sticky;
+      top: 0;
+      background: var(--bg); /* Keeps title visible while scrolling */
+      z-index: 2;
+    }
+
+    /* Item Card */
+    .item-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      transition: transform 0.2s ease;
+    }
+
+    .item-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--neon);
+    }
+
+    /* Product Specific Styles */
+    .album-art {
+      width: 100%;
+      height: 200px;
+      background-image: url('DigitalDemonsCover.jpg');
+      background-size: cover;
+      background-position: center;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .audio-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px;
+      border-radius: 0 0 8px 8px;
+      box-sizing: border-box;
+    }
+
+    .play-btn {
+      background: var(--neon);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .stripe-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: linear-gradient(45deg, var(--neon), #5a189a);
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-weight: bold;
+      box-sizing: border-box;
+    }
+
+    /* MOBILE RESPONSIVENESS */
+    @media (max-width: 900px) {
+      .shop-grid {
+        grid-template-columns: 1fr; /* Stacks columns vertically on mobile */
+      }
+
+      .shop-column {
+        height: auto; /* Lets them expand naturally on mobile */
+        overflow-y: visible;
+      }
+    }
   </style>
 </head>
 <body>
+
   <header>
     <div style="display:flex;gap:12px;align-items:center">
       <a href="/">← Home</a>
-      <div style="font-weight:800">Shop</div>
+      <div style="font-weight:800; color:#fff;">Shop</div>
     </div>
     <nav>
       <a href="/team" style="margin-right:12px">Team</a>
       <a href="/contact-us">Contact</a>
     </nav>
   </header>
+
   <main class="container">
-    <div class="card">
-      <h2 style="margin-top:0;color:var(--neon)">Store (Placeholder)</h2>
-      <p>Products and beats will appear here. You can add payment integration later (Stripe, PayPal, etc.).</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:12px">
-        <div style="padding:12px;border-radius:10px;background:rgba(10,26,43,0.3)">Beat — $29</div>
-        <div style="padding:12px;border-radius:10px;background:rgba(10,26,43,0.3)">Merch Tee — $24</div>
-        <div style="padding:12px;border-radius:10px;background:rgba(10,26,43,0.3)">Sample Pack — $12</div>
+    <div class="shop-grid">
+
+      <div class="shop-column">
+        <h2 class="column-title">Beats</h2>
+        
+        <div class="item-card">
+          <div class="album-art">
+            <div class="audio-controls">
+              <button class="play-btn" id="previewBtn">▶</button>
+              <span style="font-size: 0.9rem; font-weight: bold;">Digital Demons (Preview)</span>
+            </div>
+          </div>
+          <audio id="digitalDemonsAudio" src="DigitalDemonsSample.wav"></audio>
+          
+          <h3 style="margin: 5px 0 2px 0;">Digital Demons</h3>
+          <p style="margin: 0; font-size: 0.9rem; color: #aaa;">Majestic Trap / Lo-fi Beat</p>
+          <p style="font-size: 1.1rem; font-weight: bold; color: var(--neon-2); margin: 8px 0;">$15.00</p>
+          
+          <a href="https://buy.stripe.com/9B64gA9DQaeBdgv8JjaIM00" target="_blank" class="stripe-btn">Buy Beat</a>
+        </div>
+
+        <div class="item-card" style="opacity: 0.5;">
+          <h3 style="margin: 0 0 5px 0;">Future Beat Track</h3>
+          <p style="margin: 0; font-size: 0.9rem;">Coming Soon...</p>
+        </div>
       </div>
+
+      <div class="shop-column">
+        <h2 class="column-title">Merch</h2>
+        
+        <div class="item-card">
+          <div style="height: 150px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+            <span>Hoodies</span></span>
+          </div>
+          <h3 style="margin: 5px 0 2px 0;">Lyrical Novaa Hoodie</h3>
+          <p style="font-size: 1.1rem; font-weight: bold; color: var(--neon-2); margin: 8px 0;">$24.00</p>
+          <a href="#" class="stripe-btn">Coming Soon</a>
+        </div>
+      </div>
+
+      <div class="shop-column">
+        <h2 class="column-title">Vocal Presets</h2>
+        
+        <div class="item-card">
+          <div style="height: 150px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+            <span>🎙 FL Studio Preset</span>
+          </div>
+          <h3 style="margin: 5px 0 2px 0;">Sad Boy Melodic Preset</h3>
+          <p style="font-size: 1.1rem; font-weight: bold; color: var(--neon-2); margin: 8px 0;">$12.00</p>
+          <a href="#" class="stripe-btn">Coming Soon</a>
+        </div>
+      </div>
+
     </div>
   </main>
+
 </body>
 </html>
