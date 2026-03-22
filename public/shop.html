@@ -5,41 +5,62 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Shop — Lyrical Novaa</title>
   <style>
-    :root{
-      --bg:#0b001a; /* Dark cyber/lofi purple */
-      --neon:#9d4edd; /* Juice WRLD / Cyber Neon Purple */
-      --neon-2:#e0aaff;
-      --card-bg: rgba(255, 255, 255, 0.03);
+    :root {
+      --bg: #000; 
+      --neon: #06f; /* Lyrical Novaa Blue */
+      --neon-2: #0a7fff;
+      --card-bg: rgba(6, 111, 255, 0.03);
+      --glow: 0 0 15px rgba(6, 111, 255, 0.4);
     }
     
-    body{
-      margin:0;
-      background:var(--bg);
-      color:#fff;
-      font-family:'Segoe UI', sans-serif;
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
       overflow-x: hidden;
+      position: relative;
     }
 
-    header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
+    /* Scanline Animation Effect */
+    body::after {
+      content: " ";
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                  linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      z-index: 9999;
+      background-size: 100% 2px, 3px 100%;
+      pointer-events: none;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       padding: 18px 24px;
-      border-bottom: 1px solid rgba(157, 78, 221, 0.2);
+      border-bottom: 1px solid rgba(6, 111, 255, 0.2);
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
-    a{
-      color:var(--neon);
-      text-decoration:none;
-      font-weight: 600;
-      transition: color 0.2s;
+    a {
+      color: var(--neon);
+      text-decoration: none;
+      font-weight: 700;
+      transition: all 0.3s ease;
+      text-shadow: 0 0 5px rgba(6, 111, 255, 0.3);
     }
 
     a:hover {
       color: var(--neon-2);
+      text-shadow: 0 0 10px var(--neon-2);
     }
 
-    .container{
+    .container {
       max-width: 1200px;
       margin: 36px auto;
       padding: 0 20px;
@@ -55,113 +76,159 @@
     /* Individual Scrollable Columns */
     .shop-column {
       background: var(--card-bg);
-      border: 1px solid rgba(157, 78, 221, 0.15);
-      border-radius: 12px;
+      border: 1px solid rgba(6, 111, 255, 0.15);
+      border-radius: 16px;
       padding: 20px;
-      height: 70vh; /* Fixed height for scrollability */
+      height: 72vh;
       overflow-y: auto;
+      transition: border 0.3s ease, box-shadow 0.3s ease;
+      scrollbar-width: thin;
+      scrollbar-color: var(--neon) transparent;
     }
 
-    .shop-column::-webkit-scrollbar {
-      width: 6px;
+    .shop-column:hover {
+      border-color: var(--neon);
+      box-shadow: inset 0 0 20px rgba(6, 111, 255, 0.1);
     }
-    .shop-column::-webkit-scrollbar-thumb {
-      background: var(--neon);
-      border-radius: 3px;
-    }
+
+    /* Custom Scrollbar for Chrome/Safari */
+    .shop-column::-webkit-scrollbar { width: 5px; }
+    .shop-column::-webkit-scrollbar-thumb { background: var(--neon); border-radius: 10px; }
 
     .column-title {
       color: var(--neon);
       margin-top: 0;
-      font-size: 1.5rem;
-      border-bottom: 1px solid rgba(157, 78, 221, 0.2);
-      padding-bottom: 10px;
+      font-size: 1.6rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border-bottom: 1px dashed rgba(6, 111, 255, 0.3);
+      padding-bottom: 15px;
       position: sticky;
       top: 0;
-      background: var(--bg); /* Keeps title visible while scrolling */
+      background: var(--bg);
       z-index: 2;
+      text-shadow: 0 0 10px rgba(6, 111, 255, 0.5);
     }
 
-    /* Item Card */
+    /* Item Card with Animations */
     .item-card {
       background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 10px;
+      border: 1px solid rgba(6, 111, 255, 0.1);
+      border-radius: 12px;
       padding: 15px;
-      margin-bottom: 15px;
-      transition: transform 0.2s ease;
+      margin-bottom: 20px;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      animation: slideUp 0.5s ease-out forwards;
     }
 
     .item-card:hover {
-      transform: translateY(-3px);
+      transform: scale(1.02);
+      background: rgba(6, 111, 255, 0.05);
       border-color: var(--neon);
+      box-shadow: var(--glow);
     }
 
     /* Product Specific Styles */
     .album-art {
       width: 100%;
-      height: 200px;
-      background-image: url('/static/DigitalDemonCover.jpg');
+      height: 220px;
+      background-image: url('DigitalDemonsCover.jpg');
       background-size: cover;
       background-position: center;
       border-radius: 8px;
       margin-bottom: 12px;
       display: flex;
       align-items: flex-end;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
     }
 
     .audio-controls {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       width: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 8px;
-      border-radius: 0 0 8px 8px;
+      background: rgba(0, 0, 0, 0.75);
+      padding: 10px;
+      border-top: 1px solid var(--neon);
       box-sizing: border-box;
+      backdrop-filter: blur(5px);
     }
 
     .play-btn {
       background: var(--neon);
-      color: white;
+      color: #000;
       border: none;
       border-radius: 50%;
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
+      font-size: 1.2rem;
+      transition: all 0.3s ease;
+    }
+
+    .play-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px var(--neon);
+    }
+
+    .play-btn.playing {
+      animation: pulse 1.5s infinite;
+      background: #fff;
     }
 
     .stripe-btn {
       display: block;
       width: 100%;
       text-align: center;
-      background: linear-gradient(45deg, var(--neon), #5a189a);
-      color: white;
-      padding: 10px;
+      background: linear-gradient(90deg, var(--neon), var(--neon-2));
+      color: #000;
+      padding: 12px;
       border-radius: 8px;
       margin-top: 10px;
-      font-weight: bold;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
       box-sizing: border-box;
+      transition: 0.3s;
+    }
+
+    .stripe-btn:hover {
+      box-shadow: 0 0 20px var(--neon);
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    /* Keyframes for Animations */
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(6, 111, 255, 0.7); }
+      70% { box-shadow: 0 0 0 15px rgba(6, 111, 255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(6, 111, 255, 0); }
     }
 
     /* MOBILE RESPONSIVENESS */
     @media (max-width: 900px) {
       .shop-grid {
-        grid-template-columns: 1fr; /* Stacks columns vertically on mobile */
+        grid-template-columns: 1fr;
       }
 
       .shop-column {
-        height: auto; /* Lets them expand naturally on mobile */
+        height: auto;
         overflow-y: visible;
+        margin-bottom: 25px;
       }
     }
   </style>
 </head>
-<script src="/static/shop.js"></script>
 <body>
 
   <header>
@@ -208,7 +275,7 @@
         
         <div class="item-card">
           <div style="height: 150px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-            <span>Hoodies</span></span>
+            <span>Hoodies</span>
           </div>
           <h3 style="margin: 5px 0 2px 0;">Lyrical Novaa Hoodie</h3>
           <p style="font-size: 1.1rem; font-weight: bold; color: var(--neon-2); margin: 8px 0;">$24.00</p>
@@ -232,5 +299,6 @@
     </div>
   </main>
 
+  <script src="/static/shop.js"></script>
 </body>
 </html>
