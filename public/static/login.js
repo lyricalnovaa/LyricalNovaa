@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
           showCustomAlert(`Your OTP is: <strong>${data.otp}</strong><br>Use this OTP as your password to login and reset your password.`);
           submitBtn.disabled = false; // allow retry
         } else if (data.role) {
-          window.location.href = data.role === 'admin' ? '/admin-dashboard' : '/home';
+          window.location.href = data.role === 'admin' ? '/home' : '/home';
         }
       } else {
         if (data.error === 'reset_password') {
