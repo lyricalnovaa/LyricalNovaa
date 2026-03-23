@@ -29,17 +29,19 @@ nav a.primary{background:linear-gradient(90deg,var(--neon),var(--neon-2));color:
 nav a:hover{opacity:0.85;transform:scale(1.03)}
 
 /* PROFILE ICON / DROPDOWN */
-#nav-profile {display:none; position:relative; cursor:pointer; border:2px solid var(--neon); border-radius:50%; width:var(--pfp-size); height:var(--pfp-size); overflow:hidden;}
+#nav-profile {display:none; position:relative; cursor:pointer; border:2px solid var(--neon); border-radius:50%; width:var(--pfp-size); height:var(--pfp-size); overflow:hidden; align-items:center; justify-content:center;}
 #nav-profile img{width:100%;height:100%;object-fit:cover;}
-#nav-profile-menu {display:none; position:absolute; top:calc(var(--pfp-size)+10px); right:0; background:rgba(6,111,255,0.05); border:1px solid rgba(6,111,255,0.1); border-radius:12px; overflow:hidden; min-width:140px; text-align:left;}
-#nav-profile-menu a, #nav-profile-menu button{display:block;padding:10px 14px;color:var(--neon);text-decoration:none;font-weight:700;background:transparent;border:none;width:100%;text-align:left;cursor:pointer}
+#nav-profile-menu {display:none; position:absolute; top:50px; right:0; background:rgba(0,0,0,0.95); border:1px solid rgba(6,111,255,0.3); border-radius:12px; overflow:hidden; min-width:160px; z-index:100; box-shadow: 0 10px 30px rgba(0,0,0,0.5);}
+#nav-profile-menu a, #nav-profile-menu button{display:block;padding:12px 16px;color:var(--neon);text-decoration:none;font-weight:700;background:transparent;border:none;width:100%;text-align:left;cursor:pointer;font-family:inherit;font-size:0.9rem;}
 #nav-profile-menu a:hover, #nav-profile-menu button:hover{background:rgba(6,111,255,0.15)}
 
 /* MOBILE MENU */
 #menu-toggle{display:none;background:transparent;border:none;color:var(--neon);font-size:1.5rem;cursor:pointer}
 #mobile-menu{display:none;position:absolute;top:70px;left:0;width:100%;background:rgba(0,0,0,0.95);flex-direction:column;gap:0;padding:12px 0;z-index:20}
-#mobile-menu a, #mobile-menu button{display:block;padding:12px 24px;color:var(--neon);text-decoration:none;font-weight:700;transition:0.2s}
+#mobile-menu a, #mobile-menu button{display:block;padding:12px 24px;color:var(--neon);text-decoration:none;font-weight:700;transition:0.2s; background:none; border:none; width:100%; text-align:left; font-size:1rem;}
 #mobile-menu a:hover, #mobile-menu button:hover{background:rgba(6,111,255,0.1);}
+#mobile-profile { display:none; padding: 12px 24px; border-bottom: 1px solid rgba(6,111,255,0.1); }
+#mobile-pfp { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--neon); object-fit: cover; }
 
 /* ========================= HERO ========================= */
 main.hero{min-height:72vh;display:flex;align-items:center;justify-content:center;position:relative;z-index:5}
@@ -51,7 +53,7 @@ main.hero{min-height:72vh;display:flex;align-items:center;justify-content:center
 .hero-copy h1{font-size:clamp(2rem,4vw,3.6rem);margin:0 0 12px;color:var(--neon);text-shadow:0 0 18px rgba(6,111,255,0.18)}
 .hero-copy p{color:#cfe9ff;opacity:0.9;font-weight:600;margin:0 0 24px}
 .cta-row{display:flex;gap:12px;flex-wrap:wrap}
-.btn{padding:12px 18px;border-radius:10px;font-weight:800;border:2px solid transparent;cursor:pointer;transition:0.2s}
+.btn{padding:12px 18px;border-radius:10px;font-weight:800;border:2px solid transparent;cursor:pointer;transition:0.2s;text-decoration:none;display:inline-block;}
 .btn-ghost{background:transparent;color:var(--neon);border:1px solid rgba(6,111,255,0.18)}
 .btn-primary{background:linear-gradient(90deg,var(--neon),var(--neon-2));color:#001;box-shadow:0 10px 30px rgba(6,111,255,0.12)}
 .btn:hover{opacity:0.9;transform:scale(1.03)}
@@ -95,17 +97,14 @@ footer{padding:28px 36px;text-align:center;color:#8fbfff;border-top:1px solid rg
     <a id="nav-team" href="/team">Team</a>
     <a id="nav-contact" href="/contact-us">Contact</a>
 
-    <!-- Login / Get Started -->
     <a id="nav-login" href="/login">Log in</a>
     <a id="nav-get-started" href="/create-account" class="primary">Get Started</a>
 
-    <!-- Profile icon -->
     <div id="nav-profile">
       <img id="nav-pfp" src="/static/default-pfp.png">
       <div id="nav-profile-menu">
-        <a href="/profile">My Profile</a>
-        <a href="/profile">Dashboard</a>
-        <button id="nav-logout">Logout</button>
+        <a id="nav-dashboard" href="/profile" style="display:none;">Dashboard</a>
+        <button id="nav-logout" style="display:none;">Logout</button>
       </div>
     </div>
   </nav>
@@ -117,10 +116,12 @@ footer{padding:28px 36px;text-align:center;color:#8fbfff;border-top:1px solid rg
     <a href="/contact-us">Contact</a>
     <a id="mobile-login" href="/login">Log in</a>
     <a id="mobile-get-started" href="/create-account">Get Started</a>
+    
+    <a id="mobile-dashboard" href="/profile" style="display:none;">Dashboard</a>
     <div id="mobile-profile">
       <img id="mobile-pfp" src="/static/default-pfp.png">
     </div>
-    <button id="mobile-logout">Logout</button>
+    <button id="mobile-logout" style="display:none;">Logout</button>
   </div>
 </header>
 
