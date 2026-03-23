@@ -1,28 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
   // =========================
-  // Safe getters
+  // Element Selectors
   // =========================
-  const header = document.querySelector('header');
-  const exploreBtns = Array.from(document.querySelectorAll('a')).filter(a => /explore/i.test(a.textContent || ''));
-  const featuresSection = document.querySelector('.features');
-  const heroInner = document.querySelector('.hero-inner');
-  const glassImgs = Array.from(document.querySelectorAll('.glass-card img'));
   const yearEl = document.getElementById('year');
-
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // =========================
-  // Nav elements for logged-in state
-  // =========================
   const navLogin = document.getElementById('nav-login');
   const navGetStarted = document.getElementById('nav-get-started');
   const navDashboard = document.getElementById('nav-dashboard');
   const navLogout = document.getElementById('nav-logout');
   const navProfile = document.getElementById('nav-profile');
+  const navProfileMenu = document.getElementById('nav-profile-menu');
   const navPfp = document.getElementById('nav-pfp');
 
-  const menuToggle = document.getElementById('menu-toggle');
   const mobileMenu = document.getElementById('mobile-menu');
+  const menuToggle = document.getElementById('menu-toggle');
   const mobileLogin = document.getElementById('mobile-login');
   const mobileGetStarted = document.getElementById('mobile-get-started');
   const mobileDashboard = document.getElementById('mobile-dashboard');
@@ -31,9 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const mobilePfp = document.getElementById('mobile-pfp');
 
   const ctaCreate = document.getElementById('cta-create');
+  const featuresSection = document.querySelector('.features');
+  const exploreBtns = Array.from(document.querySelectorAll('a')).filter(a => /explore/i.test(a.textContent || ''));
 
   // =========================
-  // Init user (fixes logged-in nav)
+  // Auth Logic
   // =========================
   (async function initUser() {
     try {
@@ -41,177 +35,92 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error('no user');
       const user = await res.json();
 
+      // Check if user object indicates they are logged in
       const isLogged = !!(user && (user.loggedIn || user.artistID || user.userId || user.id || user.email));
 
       if (isLogged) {
-        // Hide signup/login
+        // 1. Hide Login/Signup links
         if (navLogin) navLogin.style.display = 'none';
         if (navGetStarted) navGetStarted.style.display = 'none';
         if (mobileLogin) mobileLogin.style.display = 'none';
         if (mobileGetStarted) mobileGetStarted.style.display = 'none';
+        if (ctaCreate) ctaCreate.style.display = 'none'; // Hide hero CTA
 
-        // Show dashboard/logout
-        if (navDashboard) navDashboard.style.display = '';
-        if (navLogout) navLogout.style.display = '';
-        if (mobileDashboard) mobileDashboard.style.display = '';
-        if (mobileLogout) mobileLogout.style.display = '';
+        // 2. Show Dashboard/Logout/Profile
+        if (navProfile) navProfile.style.display = 'flex';
+        if (navDashboard) navDashboard.style.display = 'block';
+        if (navLogout) navLogout.style.display = 'block';
 
-        if (ctaCreate) ctaCreate.style.display = 'none';
+        if (mobileProfile) mobileProfile.style.display = 'block';
+        if (mobileDashboard) mobileDashboard.style.display = 'block';
+        if (mobileLogout) mobileLogout.style.display = 'block';
 
-        // Show profile picture
+        // 3. Set Profile Picture
         const pfp = user.profilePhotoPath || user.pfp || user.profilePhoto || '/static/default-pfp.png';
-
-        if (navProfile) {
-          navProfile.style.display = 'flex';
-          if (navPfp) navPfp.src = pfp;
-        }
-
-        if (mobileProfile) {
-          mobileProfile.style.display = 'block';
-          if (mobilePfp) mobilePfp.src = pfp;
-        }
+        if (navPfp) navPfp.src = pfp;
+        if (mobilePfp) mobilePfp.src = pfp;
       }
     } catch (err) {
-      // Not logged in; nav stays default
+      console.log("User not logged in or API error.");
     }
   })();
 
   // =========================
-  // Logout handlers
+  // Interaction Handlers
   // =========================
+
+  // Desktop Profile Dropdown Toggle
+  if (navProfile) {
+    navProfile.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = navProfileMenu.style.display === 'block';
+      navProfileMenu.style.display = isVisible ? 'none' : 'block';
+    });
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+    if (navProfileMenu) navProfileMenu.style.display = 'none';
+  });
+
+  // Logout functionality
   async function handleLogout() {
     try {
       const res = await fetch('/api/logout', { method: 'POST', credentials: 'include' });
       if (res.ok) window.location.reload();
-      else window.alert('Logout failed');
+      else alert('Logout failed');
     } catch {
-      window.alert('Server error on logout');
+      alert('Server error on logout');
     }
   }
 
   if (navLogout) navLogout.addEventListener('click', handleLogout);
   if (mobileLogout) mobileLogout.addEventListener('click', handleLogout);
 
-  // =========================
-  // Mobile menu toggle
-  // =========================
-  function updateMenuToggleVisibility() {
-    if (!menuToggle) return;
-    menuToggle.style.display = window.innerWidth < 900 ? '' : 'none';
-  }
-  updateMenuToggleVisibility();
-  window.addEventListener('resize', updateMenuToggleVisibility);
-
+  // Mobile Menu Toggle
   if (menuToggle && mobileMenu) {
     menuToggle.addEventListener('click', () => {
-      mobileMenu.style.display = mobileMenu.style.display === 'block' ? 'none' : 'block';
-    });
-
-    mobileMenu.addEventListener('click', (e) => {
-      if (e.target.closest('a')) mobileMenu.style.display = 'none';
+      mobileMenu.style.display = mobileMenu.style.display === 'flex' ? 'none' : 'flex';
     });
   }
 
-  // =========================
-  // Smooth scroll for Explore buttons
-  // =========================
+  // Smooth Scroll
   exploreBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       if (!featuresSection) return;
       e.preventDefault();
-      featuresSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
     });
   });
 
-  // =========================
-  // Entrance animations
-  // =========================
-  requestAnimationFrame(() => {
-    if (heroInner) {
-      heroInner.style.opacity = 0;
-      heroInner.style.transform = 'translateY(10px)';
-      heroInner.style.transition = 'opacity 700ms ease, transform 700ms ease';
-      requestAnimationFrame(() => {
-        heroInner.style.opacity = 1;
-        heroInner.style.transform = 'translateY(0)';
-      });
-    }
-
-    if (featuresSection) {
-      featuresSection.style.opacity = 0;
-      featuresSection.style.transform = 'translateY(12px)';
-      featuresSection.style.transition = 'opacity 700ms ease 200ms, transform 700ms ease 200ms';
-      requestAnimationFrame(() => {
-        featuresSection.style.opacity = 1;
-        featuresSection.style.transform = 'translateY(0)';
-      });
-    }
-  });
-
-  // =========================
-  // Floating glass-card images
-  // =========================
+  // Floating animations for images
+  const glassImgs = document.querySelectorAll('.glass-card img');
   glassImgs.forEach((img, idx) => {
-    img.style.transition = 'transform 1000ms cubic-bezier(.2,.9,.2,1)';
+    img.style.transition = 'transform 1000ms ease-in-out';
     let dir = idx % 2 === 0 ? 1 : -1;
     setInterval(() => {
-      img.style.transform = `translateY(${dir * 6}px)`;
+      img.style.transform = `translateY(${dir * 8}px)`;
       dir = -dir;
-    }, 2500 + (idx * 300));
+    }, 2000 + (idx * 500));
   });
-
-  // =========================
-  // Placeholder SVGs
-  // =========================
-  function placeholderDataURL(label = 'placeholder', w = 600, h = 360) {
-    const bg = '#0a1a2b';
-    const fg = '#06f';
-    const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'><rect width='100%' height='100%' fill='${bg}'/><g fill='${fg}' opacity='0.12'><rect x='0' y='0' width='100%' height='100%'/></g><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Segoe UI, Arial' font-size='20' fill='${fg}' opacity='0.9'>${label}</text></svg>`;
-    return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
-  }
-
-  glassImgs.forEach(img => {
-    if (!img.src) img.src = placeholderDataURL('Art preview', 600, 360);
-    img.onerror = () => { img.src = placeholderDataURL('Placeholder', img.width || 600, img.height || 360); };
-  });
-
-  // =========================
-  // Load label members
-  // =========================
-  (async function loadMembers() {
-    const container = document.getElementById('members-grid');
-    if (!container) return;
-
-    let members = [];
-    try {
-      const res = await fetch('/api/label-members', { credentials: 'include' });
-      if (res.ok) members = await res.json();
-    } catch {}
-
-    if (!members || !members.length) {
-      members = [
-        { name: 'XANTANX', artistName: 'XANTANX', role: 'Artist', pfp: '/static/XANTANX.png' },
-        { name: 'Mercy', artistName: 'Mercy Official', role: 'Artist', pfp: '/static/Mercy.png' }
-      ];
-    }
-
-    container.innerHTML = '';
-    members.forEach(m => {
-      const el = document.createElement('div');
-      el.style.padding = '12px';
-      el.style.borderRadius = '10px';
-      el.style.background = 'linear-gradient(180deg, rgba(6,111,255,0.02), transparent)';
-      el.style.border = '1px solid rgba(6,111,255,0.06)';
-      el.innerHTML = `
-        <div style="display:flex;gap:12px;align-items:center">
-          <img src="${m.pfp || '/static/default-pfp.png'}" style="width:64px;height:64px;border-radius:10px;object-fit:cover;">
-          <div>
-            <div style="font-weight:800;color:var(--neon)">${m.name || m.artistName}</div>
-            <div style="color:#cfe9ff">@${m.artistName || ''} • ${m.role || 'Artist'}</div>
-          </div>
-        </div>
-      `;
-      container.appendChild(el);
-    });
-  })();
 });
